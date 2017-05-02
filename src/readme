@@ -1,1 +1,3 @@
+usage: ./checkpatch.pl –terse –file –no-tree <File name>
+
 checker: https://wintergreenworks.wordpress.com/2012/05/30/checkpatch-linux-coding-style-check/

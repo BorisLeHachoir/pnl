@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 
 #include "outil.h"
+#include "../module/ioctl_basics.h"
+#include <sys/ioctl.h>
 
-#define BUFF_SIZE 256
-#define MAX_PIDS 4
 #define tool_printf(...) do {printf("[ TOOL ] "); printf(__VA_ARGS__); } while (0)
 
 const struct function_s {
@@ -25,6 +30,22 @@ const struct function_s functions[] = {
 	{ "quit", NULL, quit },
 	{ NULL, NULL, error }
 };
+
+
+int perform_ioctl(int func, void *args)
+{
+	int fd;
+	fd = open("/dev/temp", O_RDWR);
+
+	if (fd == -1) {
+		tool_printf("Error in opening file\n");
+		return -1;
+	}
+
+	ioctl(fd, func, args);
+
+	return close(fd);
+}
 
 /*
  * Return 0 if success and copy the int to *res
@@ -125,26 +146,28 @@ int fg(void)
 int kill(void)
 {
 	char *arg;
-	long int pid, signal;
-	int async = 0;
+	struct mesg_kill mesg;
+	mesg.async = 0;
 
 	arg = strtok(NULL, " ");
-	if (get_int_from_strtol(&signal, arg) == -1)
+	if (get_int_from_strtol((long int *)&mesg.signal, arg) == -1)
 		return error_input("kill");
 
 	arg = strtok(NULL, " ");
-	if (get_int_from_strtol(&pid, arg) == -1)
+	if (get_int_from_strtol((long int *)&mesg.pid, arg) == -1)
 		return error_input("kill");
 
 	arg = strtok(NULL, " ");
-	async = check_for_async(arg);
-	if (async == -1)
+	mesg.async = check_for_async(arg);
+	if (mesg.async == -1)
 		return error_input("kill");
 
-	if (async)
-		tool_printf("kill async called with arg: %ld, %ld\n", signal, pid);
+	if (mesg.async)
+		tool_printf("kill async called with arg: %d, %d\n", mesg.signal, mesg.pid);
 	else
-		tool_printf("kill called with arg: %ld, %ld\n", signal, pid);
+		tool_printf("kill called with arg: %d, %d\n", mesg.signal, mesg.pid);
+
+	perform_ioctl(IOCTL_KILL, &mesg);
 
 	return 0;
 }
@@ -152,14 +175,15 @@ int kill(void)
 int wait(void)
 {
 	char *arg;
-	long int pids[MAX_PIDS];
-	int i = 1, async = 0;
+	struct mesg_wait mesg;
+	int i = 1;
+	mesg.async = 0;
 
 	arg = strtok(NULL, " ");
-	if (get_int_from_strtol(pids, arg) == -1)
+	if (get_int_from_strtol((long int *)mesg.pids, arg) == -1)
 		return error_input("wait");
 
-	while (arg) {
+	while (*arg) {
 		if (i == MAX_PIDS+1) {
 			tool_printf("Too many pids, limit is %d\n", MAX_PIDS);
 			return -1;
@@ -167,19 +191,23 @@ int wait(void)
 
 		arg = strtok(NULL, "\n ");
 
-		if (get_int_from_strtol(pids+i, arg) == -1) {
-			async = check_for_async(arg);
-			if (async == -1)
+		if (get_int_from_strtol((long int *)mesg.pids+i, arg) == -1) {
+			mesg.async = check_for_async(arg);
+			if (mesg.async == -1)
 				return error_input("wait");
 			break;
 		}
 		i++;
 	}
 
-	if (async)
-		tool_printf("wait async called with: %d pids\n", i);
+	mesg.size = i;
+
+	if (mesg.async)
+		tool_printf("wait async called with: %d pids\n", mesg.size);
 	else
-		tool_printf("wait called with: %d pids\n", i);
+		tool_printf("wait called with: %d pids\n", mesg.size);
+
+	perform_ioctl(IOCTL_WAIT, &mesg);
 
 	return 0;
 }
@@ -199,28 +227,39 @@ int meminfo(void)
 	else
 		tool_printf("meminfo called\n");
 
+	perform_ioctl(IOCTL_MEMINFO, &async);
+
 	return 0;
 }
 
 int modinfo(void)
 {
-	char *arg, *module_name;
-	int async = 0;
+	int i;
+	char *arg;
+	struct mesg_modinfo mesg;
 
-	module_name = strtok(NULL, " ");
+	mesg.async = 0;
+	memset(mesg.name, '\0', MAX_PIDS);
+	arg = strtok(NULL, " \n");
 
-	if (module_name == NULL)
+	if (arg == NULL)
 		return error_input("modinfo");
 
-	arg = strtok(NULL, " ");
-	async = check_for_async(arg);
-	if (async == -1)
+	i = 0;
+	while (*arg)
+		mesg.name[i++] = *arg++;
+
+	arg = strtok(NULL, " \n");
+	mesg.async = check_for_async(arg);
+	if (mesg.async == -1)
 		return error_input("modinfo");
 
-	if (async)
-		tool_printf("modinfo async called with %s\n", module_name);
+	if (mesg.async)
+		tool_printf("modinfo async called with %s\n", mesg.name);
 	else
-		tool_printf("modinfo called with %s\n", module_name);
+		tool_printf("modinfo called with %s\n", mesg.name);
+
+	perform_ioctl(IOCTL_MODINFO, &mesg);
 
 	return 0;
 }
