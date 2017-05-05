@@ -50,13 +50,13 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 			pr_info("%d ", mesg_wait.pids[i]);
 		}
 
-		pr_info("%c\n",mesg_wait.async ? '&':' ');
+		pr_info("%c\n", mesg_wait.async ? '&':' ');
 		break;
 
 	case IOCTL_MEMINFO:
 		printk (KERN_INFO "Asked MEMINFO");
 		copy_from_user(&i, (char *)arg, sizeof(int));
-		pr_info("recv from user: meminfo %c\n",i ? '&':' ');
+		pr_info("recv from user: meminfo %c\n", i ? '&':' ');
 		break;
 
 	case IOCTL_MODINFO:
