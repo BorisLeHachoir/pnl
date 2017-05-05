@@ -1,3 +1,13 @@
+$ insmod mod.ko
+->get the major number 
+
+$ mknod /dev/temp c <major number got by dmesg> 0
+
+
+/*****************/
+/*****************/
+/*****************/
+
 usage: ./checkpatch.pl –terse –file –no-tree <File name>
 
 checker: https://wintergreenworks.wordpress.com/2012/05/30/checkpatch-linux-coding-style-check/

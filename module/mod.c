@@ -5,9 +5,10 @@
 #include <linux/semaphore.h>
 #include <linux/cdev.h>
 #include <linux/ioctl.h>
-#include "ioctl_basics.h"
 #include <linux/version.h>
 #include <linux/uaccess.h>
+
+#include "ioctl_basics.h"
 
 static int Major;
 
@@ -26,14 +27,15 @@ int release(struct inode *inode, struct file *filp)
 long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 
-	struct mesg_kill *mesg;
+	struct mesg_kill mesg;
+
 	switch (cmd) {
 
 	case IOCTL_KILL:
-		printk (KERN_INFO "Asked KILL");
-		copy_from_user((char *)mesg, (char *)arg, sizeof(*mesg));
-			printk(KERN_INFO "Asked KILL args r: %d & %d",
-		mesg->signal, mesg->pid);
+		pr_info("ASKED KILL");
+		copy_from_user(&mesg, (char *)arg, sizeof(struct mesg_kill));
+		printk(KERN_INFO "Asked KILL signal:%d pid:%d %c\n",
+		mesg.signal, mesg.pid, mesg.async ? '&':' ');
 		break;
 
 	case IOCTL_WAIT:
@@ -84,7 +86,7 @@ int char_arr_init (void)
 	ret = cdev_add(kernel_cdev, dev, 1);
 
 	if (ret < 0) {
-		printk (KERN_INFO, "Unable to allocate cdev");
+		printk (KERN_INFO "Unable to allocate cdev");
 		return ret;
 	}
 	return 0;
@@ -92,7 +94,7 @@ int char_arr_init (void)
 
 void char_arr_cleanup(void)
 {
-	printk (KERN_INFO, " Inside cleanup_module\n");
+	printk (KERN_INFO " Inside cleanup_module\n");
 	cdev_del(kernel_cdev);
 	unregister_chrdev_region(Major, 1);
 }
