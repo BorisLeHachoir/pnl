@@ -27,27 +27,43 @@ int release(struct inode *inode, struct file *filp)
 long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 
-	struct mesg_kill mesg;
+	struct mesg_kill mesg_kill;
+	struct mesg_wait mesg_wait;
+	struct mesg_modinfo mesg_mod;
+
+	int i;
 
 	switch (cmd) {
 
 	case IOCTL_KILL:
 		pr_info("ASKED KILL");
-		copy_from_user(&mesg, (char *)arg, sizeof(struct mesg_kill));
-		printk(KERN_INFO "Asked KILL signal:%d pid:%d %c\n",
-		mesg.signal, mesg.pid, mesg.async ? '&':' ');
+		copy_from_user(&mesg_kill, (char *)arg, sizeof(struct mesg_kill));
+		pr_info("recv from user: kill %d %d %c\n",
+		mesg_kill.signal, mesg_kill.pid, mesg_kill.async ? '&':' ');
 		break;
 
 	case IOCTL_WAIT:
 		printk (KERN_INFO "Asked WAIT");
+		copy_from_user(&mesg_wait, (char *)arg, sizeof(struct mesg_wait));
+		pr_info("recv from user: wait ");
+		for (i = 0 ; i < mesg_wait.size ; ++i) {
+			pr_info("%d ", mesg_wait.pids[i]);
+		}
+
+		pr_info("%c\n",mesg_wait.async ? '&':' ');
 		break;
 
 	case IOCTL_MEMINFO:
 		printk (KERN_INFO "Asked MEMINFO");
+		copy_from_user(&i, (char *)arg, sizeof(int));
+		pr_info("recv from user: meminfo %c\n",i ? '&':' ');
 		break;
 
 	case IOCTL_MODINFO:
 		printk (KERN_INFO "Asked MODINFO");
+		copy_from_user(&mesg_mod, (char *)arg, sizeof(struct mesg_modinfo));
+		pr_info("recv from user: modinfo %s %c\n",
+		mesg_mod.name, mesg_mod.async ? '&':' ');
 		break;
 	}
 
@@ -83,6 +99,7 @@ int char_arr_init (void)
 	Major = MAJOR(dev_no);
 	dev = MKDEV(Major, 0);
 	printk (" The major number for your device is %d\n", Major);
+	printk (" usage: sudo mknod /dev/temp c %d 0\n", Major);
 	ret = cdev_add(kernel_cdev, dev, 1);
 
 	if (ret < 0) {

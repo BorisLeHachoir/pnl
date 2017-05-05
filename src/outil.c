@@ -51,14 +51,16 @@ int perform_ioctl(int func, void *args)
  * Return 0 if success and copy the int to *res
  * Return -1 in case of failure and *res contain garbage
  */
-int get_int_from_strtol(long int *res, char *arg)
+int get_int_from_strtol(int *res, char *arg)
 {
 	char *endptr;
+	long tmp;
 
 	if (arg == NULL || arg[0] == '\n')
 		return -1;
 
-	*res = strtol(arg, &endptr, 10);
+	tmp = strtol(arg, &endptr, 10);
+	*res = (int)tmp;
 
 	if (arg[0] == '\0' || !(endptr[0] == '\n' || endptr[0] == '\0'))
 		return -1;
@@ -123,7 +125,7 @@ int list(void)
 int fg(void)
 {
 	char *arg;
-	long int id;
+	int id;
 	int async = 0;
 
 	arg = strtok(NULL, " ");
@@ -136,9 +138,9 @@ int fg(void)
 		return error_input("fg");
 
 	if (async)
-		tool_printf("fg async called with arg: %ld\n", id);
+		tool_printf("fg async called with arg: %d\n", id);
 	else
-		tool_printf("fg called with arg: %ld\n", id);
+		tool_printf("fg called with arg: %d\n", id);
 
 	return 0;
 }
@@ -150,14 +152,14 @@ int kill(void)
 	mesg.async = 0;
 
 	arg = strtok(NULL, " ");
-	if (get_int_from_strtol((long int *)&mesg.signal, arg) == -1)
+	if (get_int_from_strtol(&mesg.signal, arg) == -1)
 		return error_input("kill");
 
 	arg = strtok(NULL, " ");
-	if (get_int_from_strtol((long int *)&mesg.pid, arg) == -1)
+	if (get_int_from_strtol(&mesg.pid, arg) == -1)
 		return error_input("kill");
 
-	arg = strtok(NULL, " ");
+	arg = strtok(NULL, " \n");
 	mesg.async = check_for_async(arg);
 	if (mesg.async == -1)
 		return error_input("kill");
@@ -180,7 +182,7 @@ int wait(void)
 	mesg.async = 0;
 
 	arg = strtok(NULL, " ");
-	if (get_int_from_strtol((long int *)mesg.pids, arg) == -1)
+	if (get_int_from_strtol(mesg.pids, arg) == -1)
 		return error_input("wait");
 
 	while (*arg) {
@@ -189,9 +191,10 @@ int wait(void)
 			return -1;
 		}
 
-		arg = strtok(NULL, "\n ");
+		arg = strtok(NULL, " \n");
 
-		if (get_int_from_strtol((long int *)mesg.pids+i, arg) == -1) {
+		if (get_int_from_strtol(mesg.pids+i, arg) == -1) {
+		//if (get_int_from_strtol(&buf, arg) == -1) {
 			mesg.async = check_for_async(arg);
 			if (mesg.async == -1)
 				return error_input("wait");
