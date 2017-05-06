@@ -1,4 +1,3 @@
-#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/fs.h>
 #include <linux/slab.h>
@@ -10,12 +9,23 @@
 #include <linux/uaccess.h>
 #include <linux/sched.h>
 
+/* meminfo */
+#include <linux/mm.h>
+#include <linux/sysinfo.h>
+#include <linux/swap.h>
+
+/* modinfo */
+#include <linux/module.h>
+
+
 #include "ioctl_basics.h"
 #include "mod.h"
 
 static int Major;
 
 static struct workqueue_struct *func_wq;
+
+int myvar;
 
 int open(struct inode *inode, struct file *filp)
 {
@@ -69,10 +79,31 @@ static void wait_function(struct work_struct *wk)
 	kfree((void *)wk);
 }
 
+static void meminfo_function(struct work_struct *wk)
+{
+	struct sysinfo mem_val;
+	struct sysinfo swap_val;
+
+	si_meminfo(&mem_val);
+	//si_swapinfo(&swap_val);
+}
+
 static void modinfo_function(struct work_struct *wk)
 {
+	struct module *module_tofind;
 	struct modinfo_work *work =
 	    container_of(wk, struct modinfo_work, work_s);
+
+	module_tofind = find_module(work->name);
+	if (module_tofind) {
+		pr_info("nom: %s\n", module_tofind->name);
+		pr_info("version: %s\n", module_tofind->version);
+		pr_info("load adr: %p\n", module_tofind->module_core);
+		if(module_tofind->args)
+			pr_info("args: %s\n", module_tofind->args);
+	}
+
+
 
 	pr_info("[MODINFO_FUNCTION] name: %s\n", work->name);
 
@@ -88,6 +119,7 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	struct kill_work *kill_work;
 	struct wait_work *wait_work;
+	struct work_struct meminfo_work;
 	struct modinfo_work *modinfo_work;
 
 	int i;
@@ -172,6 +204,14 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 		pr_info("Asked MEMINFO");
 		copy_from_user(&i, (char *)arg, sizeof(int));
 		pr_info("recv from user: meminfo %c\n", i ? '&' : ' ');
+
+		INIT_WORK(&meminfo_work, meminfo_function);
+
+		if (!queue_work(func_wq, &meminfo_work)) {
+			pr_info("work was already on a queue\n");
+			return -1;
+		}
+
 		break;
 
 	case IOCTL_MODINFO:
@@ -257,5 +297,6 @@ void char_arr_cleanup(void)
 }
 
 MODULE_LICENSE("GPL");
+MODULE_VERSION("0.5.4");
 module_init(char_arr_init);
 module_exit(char_arr_cleanup);
