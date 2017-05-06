@@ -8,6 +8,7 @@
 #include <linux/ioctl.h>
 #include <linux/version.h>
 #include <linux/uaccess.h>
+#include <linux/sched.h>
 
 #include "ioctl_basics.h"
 #include "mod.h"
@@ -30,12 +31,28 @@ int release(struct inode *inode, struct file *filp)
 
 static void kill_function(struct work_struct *wk)
 {
-	struct kill_work *work = container_of(wk, struct kill_work, work_s);
+	int ret;
+	struct pid *pid_struct;
+	struct kill_work * work = container_of(wk, struct kill_work, work_s);
 
 	pr_info("[KILL_FUNCTION] signal: %d pid: %d\n", work->signal,
 		work->pid);
 
-	kfree((void *)wk);
+	/* Check signal valid */
+	if(work->signal > _NSIG || work->signal < 1)
+		return;
+
+	pid_struct = find_get_pid(work->pid);
+
+	if (pid_struct) {
+		ret = kill_pid(pid_struct, work->signal, 1);
+		
+		pr_info("ret = %d", ret);
+	}
+
+	kfree( (void *)wk);
+
+	return;
 }
 
 static void wait_function(struct work_struct *wk)
@@ -92,30 +109,31 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case IOCTL_KILL:
 		pr_info("ASKED KILL");
-		copy_from_user(&mesg_kill, (char *)arg,
-			       sizeof(struct mesg_kill));
-		pr_info("recv from user: kill %d %d %c\n", mesg_kill.signal,
-			mesg_kill.pid, mesg_kill.async ? '&' : ' ');
+		copy_from_user(&mesg_kill, (char *)arg, sizeof(struct mesg_kill));
+		pr_info("recv from user: kill %d %d %c\n",
+		mesg_kill.signal, mesg_kill.pid, mesg_kill.async ? '&':' ');
 
-		kill_work = kmalloc(sizeof(struct kill_work), GFP_KERNEL);
-		if (kill_work) {
+		kill_work = (struct kill_work *)kmalloc(sizeof(struct kill_work), GFP_KERNEL);
 
-			INIT_WORK(&(kill_work->work_s), kill_function);
+		if(kill_work)
+		{
+			INIT_WORK( &(kill_work->work_s), kill_function);
 
 			kill_work->signal = mesg_kill.signal;
 			kill_work->pid = mesg_kill.pid;
 
-			if (!queue_work(func_wq, &(kill_work->work_s))) {
+			if(! queue_work( func_wq,  &(kill_work->work_s))){
 
-				pr_info("work was already on a queue\n");
-				kfree((void *)kill_work);
-				return -1;
+			pr_info("work was already on a queue\n");
+			kfree ( (void *)kill_work);
+			return -1;
 			}
-		} else {
+		}
+		else
+		{
 			pr_info("kmalloc failed\n");
 			return -1;
 		}
-
 		break;
 
 	case IOCTL_WAIT:

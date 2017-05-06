@@ -6,7 +6,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-
 #include "outil.h"
 #include "../module/ioctl_basics.h"
 #include <sys/ioctl.h>
@@ -20,21 +19,20 @@
 const struct function_s {
 	char *name;
 	char *usage;
-	int (*function)();
+	int (*function) ();
 } function_t;
 
 const struct function_s functions[] = {
-	{ "list", NULL, list },
-	{ "fg", "<id>", fg },
-	{ "kill", "<signal> <pid>", kill },
-	{ "wait", "<pid> [<pid> ...]", waitf },
-	{ "meminfo", NULL, meminfo },
-	{ "modinfo", "<name>", modinfo },
-	{ "help", NULL, help },
-	{ "quit", NULL, quit },
-	{ NULL, NULL, error }
+	{"list", NULL, list},
+	{"fg", "<id>", fg},
+	{"kill", "<signal> <pid>", kill},
+	{"wait", "<pid> [<pid> ...]", waitf},
+	{"meminfo", NULL, meminfo},
+	{"modinfo", "<name>", modinfo},
+	{"help", NULL, help},
+	{"quit", NULL, quit},
+	{NULL, NULL, error}
 };
-
 
 int perform_ioctl(int func, void *args)
 {
@@ -92,12 +90,12 @@ int error_input(char *func_name)
 		if (strcmp(functions[i].name, func_name) == 0) {
 			tool_printf("Wrong call\n");
 			if (functions[i].usage)
-				tool_printf("Usage: %s %s\n",
-					func_name, functions[i].usage);
+				tool_printf("Usage: %s %s\n", func_name,
+					    functions[i].usage);
 			else
-				tool_printf(
-					"Function \"%s\" doesn't take any args\n",
-					func_name);
+				tool_printf
+				    ("Function \"%s\" doesn't take any args\n",
+				     func_name);
 			return -1;
 		}
 		++i;
@@ -180,13 +178,11 @@ int kill(void)
 		return error_input("kill");
 
 	if (mesg.async)
-		tool_printf(
-			"kill async called with arg: %d, %d\n",
-			mesg.signal, mesg.pid);
+		tool_printf("kill async called with arg: %d, %d\n",
+			    mesg.signal, mesg.pid);
 	else
-		tool_printf(
-			"kill called with arg: %d, %d\n",
-			mesg.signal, mesg.pid);
+		tool_printf("kill called with arg: %d, %d\n", mesg.signal,
+			    mesg.pid);
 
 	perform_ioctl(IOCTL_KILL, &mesg);
 
@@ -206,15 +202,15 @@ int waitf(void)
 		return error_input("wait");
 
 	while (*arg) {
-		if (i == MAX_PIDS+1) {
+		if (i == MAX_PIDS + 1) {
 			tool_printf("Too many pids, limit is %d\n", MAX_PIDS);
 			return -1;
 		}
 
 		arg = strtok(NULL, "\n ");
 
-		if (get_int_from_strtol(mesg.pids+i, arg) == -1) {
-		//if (get_int_from_strtol(&buf, arg) == -1) {
+		if (get_int_from_strtol(mesg.pids + i, arg) == -1) {
+			//if (get_int_from_strtol(&buf, arg) == -1) {
 			mesg.async = check_for_async(arg);
 			if (mesg.async == -1)
 				return error_input("wait");
@@ -286,6 +282,7 @@ int modinfo(void)
 
 	return 0;
 }
+
 int help(void)
 {
 	int i = 0;
@@ -309,7 +306,6 @@ int quit(void)
 	tool_printf("exit...\n");
 	exit(EXIT_SUCCESS);
 }
-
 
 int main(void)
 {
@@ -340,4 +336,3 @@ int main(void)
 
 	return EXIT_SUCCESS;
 }
-
