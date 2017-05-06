@@ -10,7 +10,7 @@ int fg(void);
 
 int kill(void);
 
-int wait(void);
+int waitf(void);
 
 int meminfo(void);
 

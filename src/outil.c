@@ -187,7 +187,7 @@ int kill(void)
 	return 0;
 }
 
-int wait(void)
+int waitf(void)
 {
 	char *arg;
 	struct mesg_wait mesg;
