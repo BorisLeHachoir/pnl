@@ -27,7 +27,7 @@ const struct function_s functions[] = {
 	{ "list", NULL, list },
 	{ "fg", "<id>", fg },
 	{ "kill", "<signal> <pid>", kill },
-	{ "wait", "<pid> [<pid> ...]", wait },
+	{ "wait", "<pid> [<pid> ...]", waitf },
 	{ "meminfo", NULL, meminfo },
 	{ "modinfo", "<name>", modinfo },
 	{ "help", NULL, help },

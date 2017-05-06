@@ -2,7 +2,6 @@
 #include <linux/kernel.h>
 #include <linux/fs.h>
 #include <linux/slab.h>
-#include <linux/workqueue.h>
 /* required for various structures related to files liked fops. */
 #include <linux/semaphore.h>
 #include <linux/cdev.h>
@@ -10,30 +9,8 @@
 #include <linux/version.h>
 #include <linux/uaccess.h>
 
-
 #include "ioctl_basics.h"
-
-struct kill_work;
-struct wait_work;
-struct modinfo_work;
-
-
-struct kill_work{
-	struct work_struct work_s;
-	int signal;
-	int pid;
-};
-
-struct wait_work{
-	struct work_struct work_s;
-	int size;
-	int pids[MAX_PIDS];
-};
-
-struct modinfo_work{
-	struct work_struct work_s;
-	char name[BUFF_SIZE];
-};
+#include "mod.h"
 
 static int Major;
 
@@ -51,29 +28,9 @@ int release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static struct kill_work;
-struct wait_work;
-struct modinfo_work;
-
-
-struct kill_work{
-	struct work_struct work_s;
-	int signal;
-	int pid;
-};
-
-struct wait_work{
-	struct work_struct work_s;
-	int size;
-	int pids[MAX_PIDS];
-};
-
-struct modinfo_work{
-	struct work_struct work_s;
-	char name[BUFF_SIZE];
-};void kill_function( struct work_struct *wk)
+static void kill_function( struct work_struct *wk)
 {
- struct kill_work * work = container_of(wk, struct kill_work, work_s);
+	struct kill_work * work = container_of(wk, struct kill_work, work_s);
 
 	pr_info("[KILL_FUNCTION] signal: %d pid: %d\n", work->signal, work->pid);
 
@@ -253,15 +210,15 @@ int char_arr_init (void)
 	printk (" The major number for your device is %d\n", Major);
 	printk (" usage: sudo mknod /dev/temp c %d 0\n", Major);
 	ret = cdev_add(kernel_cdev, dev, 1);
- 
+
 	if (ret < 0) {
 		printk (KERN_INFO "Unable to allocate cdev");
 		return ret;
 	}
 
- func_wq = create_workqueue("function_queue");
+	func_wq = create_workqueue("function_queue");
 
- 
+
 	return 0;
 }
 
@@ -271,10 +228,10 @@ void char_arr_cleanup(void)
 	cdev_del(kernel_cdev);
 	unregister_chrdev_region(Major, 1);
 
- flush_workqueue( func_wq );
- destroy_workqueue( func_wq );
+	flush_workqueue( func_wq );
+	destroy_workqueue( func_wq );
 
- return;
+	return;
 }
 MODULE_LICENSE("GPL");
 module_init(char_arr_init);
