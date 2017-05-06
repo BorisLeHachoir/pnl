@@ -126,6 +126,8 @@ int list(void)
 		tool_printf("list async called\n");
 	else
 		tool_printf("list called\n");
+		
+	perform_ioctl(IOCTL_LIST, &async);
 
 	return 0;
 }
@@ -134,21 +136,25 @@ int fg(void)
 {
 	char *arg;
 	int id;
-	int async = 0;
+	struct mesg_fg mesg;
+	
+	mesg.async = 0;
 
 	arg = strtok(NULL, " ");
 	if (get_int_from_strtol(&id, arg) == -1)
 		return error_input("fg");
 
 	arg = strtok(NULL, " ");
-	async = check_for_async(arg);
-	if (async == -1)
+	mesg.async = check_for_async(arg);
+	if (mesg.async == -1)
 		return error_input("fg");
 
-	if (async)
+	if (mesg.async)
 		tool_printf("fg async called with arg: %d\n", id);
 	else
 		tool_printf("fg called with arg: %d\n", id);
+		
+	perform_ioctl(IOCTL_FG, &mesg);
 
 	return 0;
 }
