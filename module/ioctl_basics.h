@@ -1,6 +1,12 @@
+#include <linux/workqueue.h>
+
 struct mesg_kill;
 struct mesg_wait;
 struct mesg_modinfo;
+
+struct kill_work;
+struct wait_work;
+struct_modinfo_work;
 
 #define IOC_MAGIC 'k'
 
@@ -13,19 +19,36 @@ struct mesg_modinfo;
 #define MAX_PIDS 16
 
 
-struct mesg_kill {
-	int async;
+struct mesg_kill{
+ int async;
 	int signal;
 	int pid;
 };
 
-struct mesg_wait {
+struct mesg_wait{
 	int async;
 	int size;
 	int pids[MAX_PIDS];
 };
 
-struct mesg_modinfo {
+struct mesg_modinfo{
 	int async;
 	char name[BUFF_SIZE];
 };
+
+struct kill_work{
+	struct work_struct work_s;
+	int signal;
+	int pid;
+};
+
+struct wait_work{
+	struct work_struct work_s;
+	int size;
+	int pids[MAX_PIDS];
+};
+
+struct modinfo_work{
+	struct work_struct work_s;
+	char name[BUFF_SIZE];
+}
