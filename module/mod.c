@@ -17,8 +17,6 @@
 /* modinfo */
 #include <linux/module.h>
 
-
-#include "ioctl_basics.h"
 #include "mod.h"
 
 static int Major;
@@ -94,20 +92,22 @@ static void modinfo_function(struct work_struct *wk)
 	struct modinfo_work *work =
 	    container_of(wk, struct modinfo_work, work_s);
 
-	module_tofind = find_module(work->name);
+	module_tofind = find_module(work->mesg.name);
 	if (module_tofind) {
 		pr_info("nom: %s\n", module_tofind->name);
+		strcpy(work->mesg.res_name, module_tofind->name);
 		pr_info("version: %s\n", module_tofind->version);
+		strcpy(work->mesg.res_version, module_tofind->version);
 		pr_info("load adr: %p\n", module_tofind->module_core);
-		if(module_tofind->args)
+		pr_info("Avant");
+		work->mesg.res_core = module_tofind->module_core;
+		pr_info("Apres");
+		if(module_tofind->args) {
 			pr_info("args: %s\n", module_tofind->args);
+			strcpy(work->mesg.res_args, module_tofind->args);
+		}
 	}
-
-
-
-	pr_info("[MODINFO_FUNCTION] name: %s\n", work->name);
-
-	kfree((void *)wk);
+	pr_info("fin modinfo function");
 }
 
 long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
@@ -115,7 +115,6 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 	struct mesg_fg mesg_fg;
 	struct mesg_kill mesg_kill;
 	struct mesg_wait mesg_wait;
-	struct mesg_modinfo mesg_mod;
 
 	struct kill_work *kill_work;
 	struct wait_work *wait_work;
@@ -155,10 +154,9 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 			kill_work->pid = mesg_kill.pid;
 
 			if(! queue_work( func_wq,  &(kill_work->work_s))){
-
-			pr_info("work was already on a queue\n");
-			kfree ( (void *)kill_work);
-			return -1;
+				pr_info("work was already on a queue\n");
+				kfree ( (void *)kill_work);
+				return -1;
 			}
 		}
 		else
@@ -216,30 +214,34 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case IOCTL_MODINFO:
 		pr_info("Asked MODINFO");
-		copy_from_user(&mesg_mod, (char *)arg,
-			       sizeof(struct mesg_modinfo));
-		pr_info("recv from user: modinfo %s %c\n", mesg_mod.name,
-			mesg_mod.async ? '&' : ' ');
+
 
 		modinfo_work = kmalloc(sizeof(struct modinfo_work), GFP_KERNEL);
+
 		if (modinfo_work) {
+			copy_from_user(&modinfo_work->mesg, (char *)arg,
+				       sizeof(struct mesg_modinfo));
+			pr_info("recv from user: modinfo %s %c\n", modinfo_work->mesg.name,
+				modinfo_work->mesg.async ? '&' : ' ');
 
 			INIT_WORK(&(modinfo_work->work_s), modinfo_function);
 
-			strncpy(modinfo_work->name, mesg_mod.name,
-				(size_t) BUFF_SIZE);
-
 			if (!queue_work(func_wq, &(modinfo_work->work_s))) {
-
 				pr_info("work was already on a queue\n");
 				kfree((void *)modinfo_work);
 				return -1;
 			}
+			pr_info("AVANT FLUSH");
+			flush_work(&modinfo_work->work_s);
+			pr_info("AVANT COPYTOUSER");
+			copy_to_user((char *)arg, &modinfo_work->mesg, sizeof(struct mesg_modinfo));
+			pr_info("APRES COPYTOUSER");
 		} else {
 			pr_info("kmalloc failed\n");
 			return -1;
 		}
 
+		kfree((void *)modinfo_work);
 		break;
 	}
 

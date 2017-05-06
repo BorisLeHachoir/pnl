@@ -34,6 +34,23 @@ const struct function_s functions[] = {
 	{NULL, NULL, error}
 };
 
+static void display_result_modinfo(struct mesg_modinfo *mesg)
+{
+	if (mesg->name) {
+		tool_printf("<---- Module information ---->\n");
+		tool_printf("name: %s\n", mesg->res_name);
+		if(mesg->res_version)
+			tool_printf("version: %s\n", mesg->res_version);
+		if(mesg->res_core)
+			tool_printf("base addr: %p\n", mesg->res_core);
+		if(mesg->res_args)
+			tool_printf("args: %s\n", mesg->res_args);
+	}
+	else {
+		tool_printf("Module %s was not found\n",  mesg->name);
+	}
+}
+
 int perform_ioctl(int func, void *args)
 {
 	int fd;
@@ -273,12 +290,17 @@ int modinfo(void)
 	if (mesg.async == -1)
 		return error_input("modinfo");
 
-	if (mesg.async)
-		tool_printf("modinfo async called with %s\n", mesg.name);
-	else
-		tool_printf("modinfo called with %s\n", mesg.name);
-
-	perform_ioctl(IOCTL_MODINFO, &mesg);
+	if(perform_ioctl(IOCTL_MODINFO, &mesg) == 0)
+	{
+		if (mesg.async)
+			tool_printf("modinfo async successfully called !\n");
+		else
+			display_result_modinfo(&mesg);
+	}
+	else {
+		tool_printf("Error performing ioctl call\n");
+		return -1;
+	}
 
 	return 0;
 }

@@ -1,5 +1,6 @@
 #include <linux/workqueue.h>
 
+#include "ioctl_basics.h"
 /*
  * Queues Structs
  */
@@ -18,5 +19,5 @@ struct wait_work {
 
 struct modinfo_work {
 	struct work_struct work_s;
-	char name[BUFF_SIZE];
+	struct mesg_modinfo mesg;
 };

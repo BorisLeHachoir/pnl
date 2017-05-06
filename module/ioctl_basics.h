@@ -35,4 +35,8 @@ struct mesg_wait {
 struct mesg_modinfo {
 	int async;
 	char name[BUFF_SIZE];
+	char res_name[BUFF_SIZE];
+	char res_version[BUFF_SIZE];
+	void *res_core;
+	char res_args[BUFF_SIZE];
 };
