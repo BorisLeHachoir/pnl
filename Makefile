@@ -1,13 +1,13 @@
 all:
-	##########		src			##########
+	##########		src		##########
 	+ $(MAKE) -C src
 
-	##########		module	##########
+	##########		module		##########
 	+ $(MAKE) -C module
 
 clean: 
-	##########		src			##########
+	##########		src		##########
 	+ $(MAKE) clean -C src
 
-	##########		module	##########
+	##########		module		##########
 	+ $(MAKE) clean -C module
