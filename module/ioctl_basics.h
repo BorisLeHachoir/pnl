@@ -34,6 +34,7 @@ struct mesg_wait {
 	int pids[MAX_PIDS];
  int ret;
  int pid;
+ int exit_value;
 };
 
 struct mesg_modinfo {
@@ -47,29 +48,14 @@ struct mesg_modinfo {
 
 struct mesg_meminfo{
  int async;
- int mem_total;
- int mem_free;
- int buffers;
- int cached;
- int swap_cached;
- int active;
- int inactive;
- int high_total;
- int high_free;
- int low_total;
- int low_free;
- int swap_total;
- int swap_free;
- int dirty;
- int writeback;
- int mapped;
- int slab;
- int committed_as;
- int page_tables;
- int vmalloc_total;
- int vmalloc_used;
- int vmalloc_chunk;
- int huge_pages_total;
- int huge_pages_free;
- int huge_pages_size;
+ int ret;
+ unsigned long totalram;      /* Total usable main memory size */
+ unsigned long freeram;       /* Available memory size */
+ unsigned long sharedram;     /* Amount of shared memory */
+ unsigned long bufferram;     /* Memory used by buffers */
+ unsigned long totalswap;     /* Total swap space size */
+ unsigned long freeswap;      /* Swap space still available */
+ unsigned long totalhigh;     /* Total high memory size */
+ unsigned long freehigh;      /* Available high memory size */
+ int           mem_unit;      /* Memory unit size in bytes */
 };
