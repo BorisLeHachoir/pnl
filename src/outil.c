@@ -51,6 +51,21 @@ static void display_result_modinfo(struct mesg_modinfo *mesg)
 	}
 }
 
+static void display_result_kill(struct mesg_kill *mesg)
+{
+  tool_printf("<----------- Kill ----------->\n");
+  if(mesg->ret >= 0)
+   tool_printf("Process was successfully killed\n");
+  else if (mesg->ret == -1)
+   tool_printf("Operation not permitted\n");
+  else if (mesg->ret == -3)
+   tool_printf("No such process\n");
+  else if (mesg->ret == -22)
+   tool_printf("Invalid signal");
+  else
+   tool_printf("kill return %d\n", mesg->ret);
+}
+
 int perform_ioctl(int func, void *args)
 {
 	int fd;
@@ -201,9 +216,18 @@ int kill(void)
 		tool_printf("kill called with arg: %d, %d\n", mesg.signal,
 			    mesg.pid);
 
-	perform_ioctl(IOCTL_KILL, &mesg);
-
-	return 0;
+	if(perform_ioctl(IOCTL_KILL, &mesg) == 0)
+ {
+   if (mesg.async)
+		  tool_printf("kill async called with arg: %d, %d\n",
+			    mesg.signal, mesg.pid);
+   else
+    display_result_kill(&mesg);
+	} else {
+  tool_printf("Error performing ioct call\n");
+  return -1;
+ }
+ return 0;
 }
 
 int waitf(void)
