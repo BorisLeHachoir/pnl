@@ -69,9 +69,9 @@ static void display_result_meminfo( struct mesg_meminfo * mesg)
 {
  tool_printf("<----- Memory information --->\n");
  
- if(mesg->ret == -2)
+ if(mesg->ret == -2){
   tool_printf("meminfo failed\n");
- else{
+ }else{
   tool_printf("MemTotal: \t\t\t%lu kB\n", mesg->totalram);
   tool_printf("MemFree:  \t\t\t%lu kB\n", mesg->freeram);
   tool_printf("MemShare: \t\t\t%lu kB\n", mesg->sharedram);
@@ -83,6 +83,16 @@ static void display_result_meminfo( struct mesg_meminfo * mesg)
   tool_printf("MemUnit:  \t\t\t%d B\n",  mesg->mem_unit);
  }
 }
+
+static void display_result_wait( struct mesg_wait * mesg)
+{
+ tool_printf("<------------ Wait ---------->\n");
+ if(mesg->ret == -2)
+  tool_printf("Wait failed: No such process\n");
+ else
+  tool_printf("Process %d terminated with %d\n", mesg->pid, mesg->exit_value);
+}
+
 int perform_ioctl(int func, void *args)
 {
 	int fd;
@@ -279,13 +289,17 @@ int waitf(void)
 
 	mesg.size = i;
 
-	if (mesg.async)
-		tool_printf("wait async called with: %d pids\n", mesg.size);
-	else
-		tool_printf("wait called with: %d pids\n", mesg.size);
-
-	perform_ioctl(IOCTL_WAIT, &mesg);
-
+ if(perform_ioctl(IOCTL_WAIT, &mesg) == 0){
+  if(mesg.async){
+   tool_printf("wait async called with: %d pids\n", mesg.size);
+  }else{
+   tool_printf("wait caliled with: %d pids\n", mesg.size);
+   display_result_wait(&mesg);
+  }
+ }else{
+  tool_printf("Error performing ioctl call\n");
+  return -1;
+ }
 	return 0;
 }
 
