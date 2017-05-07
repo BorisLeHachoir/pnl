@@ -17,6 +17,10 @@
 /* modinfo */
 #include <linux/module.h>
 
+/* wait */
+#include <linux/pid.h>
+#include <linux/delay.h>
+
 #include "mod.h"
 
 static int Major;
@@ -56,6 +60,7 @@ static void kill_function(struct work_struct *wk)
 	if (pid_struct) {
 		work->mesg.kill->ret = kill_pid(pid_struct, work->mesg.kill->signal, 1);
 		pr_info("ret = %d", work->mesg.kill->ret);
+  //put_pid(pid_struct);
 	}
  else work->mesg.kill->ret = -3;
 	return;
@@ -63,17 +68,60 @@ static void kill_function(struct work_struct *wk)
 
 static void wait_function(struct work_struct *wk)
 {
-	int i;
+	int i, cpt = 0, pid = 0;
+ struct task_struct * task_struct = NULL;
+ struct task_struct * task_struct_tab[MAX_PIDS];
+ struct pid * pid_struct = NULL;
+ struct pid * pid_struct_tab[MAX_PIDS];
+
  struct func_work * work = container_of(wk, struct func_work, work_s);
 
-	pr_info("[WAIT_FUNCTION] size: %d ", work->mesg.wait->size);
-	for (i = 0; i < (work->mesg.wait->size - 1); i++)
-		pr_info("| pids[%d]: %d ", i, work->mesg.wait->pids[i]);
+ for( i=0; i < work->mesg.wait->size; i++){
+  pid_struct = find_get_pid(work->mesg.wait->pids[i]);
+  if(pid_struct){
+   task_struct = get_pid_task(pid_struct, PIDTYPE_PID);
+   if(task_struct){
+    pid_struct_tab[cpt] = pid_struct;
+    task_struct_tab[cpt] = task_struct;
+    cpt++;
+   }
+   /*else{
+    put_pid(pid_struct);
+   }*/
+  }
+ }
 
-	pr_info("\n");
+ if(cpt == 0) 
+  work->mesg.wait->ret = -2;
+ else 
+  while(pid == 0){
+   for(i = 0; i < cpt; i++){
+    task_struct = task_struct_tab[i];
+    if(task_struct){
+     if(pid_alive(task_struct)){
+      pr_info("pid alive\n");
+      ssleep(1);
+     }else{   
+      pr_info("fin proc\n");
+      if(task_struct){
+       pid = 1;
+       work->mesg.wait->pid = task_struct->pid;
+       work->mesg.wait->exit_value = task_struct->exit_code;
+       work->mesg.wait->ret = 0;
+       break;
+      }
+     }
+    }else{
+     pr_info("tast_struct null\n");
+    }
+    ssleep(1);
+   }
+  }
  
+ for(i=0; i <cpt; i++) put_task_struct(task_struct_tab[i]); 
 
 }
+
 
 static void meminfo_function(struct work_struct *wk)
 {
