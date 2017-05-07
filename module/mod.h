@@ -5,19 +5,16 @@
  * Queues Structs
  */
 
-struct kill_work {
+struct func_work {
 	struct work_struct work_s;
-	int signal;
-	int pid;
+	
+ union
+  {
+   struct mesg_fg      *  fg;
+   struct mesg_kill    *  kill;
+   struct mesg_wait    *  wait;
+   struct mesg_modinfo *  modinfo;
+   struct mesg_meminfo *  meminfo;
+  } mesg;
 };
 
-struct wait_work {
-	struct work_struct work_s;
-	int size;
-	int pids[MAX_PIDS];
-};
-
-struct modinfo_work {
-	struct work_struct work_s;
-	struct mesg_modinfo mesg;
-};

@@ -1,3 +1,4 @@
+
 struct mesg_kill;
 struct mesg_wait;
 struct mesg_modinfo;
@@ -24,12 +25,15 @@ struct mesg_kill {
 	int async;
 	int signal;
 	int pid;
+ int ret;
 };
 
 struct mesg_wait {
 	int async;
 	int size;
 	int pids[MAX_PIDS];
+ int ret;
+ int pid;
 };
 
 struct mesg_modinfo {
@@ -39,4 +43,33 @@ struct mesg_modinfo {
 	char res_version[BUFF_SIZE];
 	void *res_core;
 	char res_args[BUFF_SIZE];
+};
+
+struct mesg_meminfo{
+ int async;
+ int mem_total;
+ int mem_free;
+ int buffers;
+ int cached;
+ int swap_cached;
+ int active;
+ int inactive;
+ int high_total;
+ int high_free;
+ int low_total;
+ int low_free;
+ int swap_total;
+ int swap_free;
+ int dirty;
+ int writeback;
+ int mapped;
+ int slab;
+ int committed_as;
+ int page_tables;
+ int vmalloc_total;
+ int vmalloc_used;
+ int vmalloc_chunk;
+ int huge_pages_total;
+ int huge_pages_free;
+ int huge_pages_size;
 };
