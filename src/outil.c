@@ -58,14 +58,31 @@ static void display_result_kill(struct mesg_kill *mesg)
    tool_printf("Process was successfully killed\n");
   else if (mesg->ret == -1)
    tool_printf("Operation not permitted\n");
+  else if (mesg->ret == -2)
+   tool_printf("kill failed\n");
   else if (mesg->ret == -3)
    tool_printf("No such process\n");
   else if (mesg->ret == -22)
-   tool_printf("Invalid signal");
-  else
-   tool_printf("kill return %d\n", mesg->ret);
+   tool_printf("Invalid signal\n");
 }
-
+static void display_result_meminfo( struct mesg_meminfo * mesg)
+{
+ tool_printf("<----- Memory information --->\n");
+ 
+ if(mesg->ret == -2)
+  tool_printf("meminfo failed\n");
+ else{
+  tool_printf("MemTotal: \t\t\t%lu kB\n", mesg->totalram);
+  tool_printf("MemFree:  \t\t\t%lu kB\n", mesg->freeram);
+  tool_printf("MemShare: \t\t\t%lu kB\n", mesg->sharedram);
+  tool_printf("Buffers:  \t\t\t%lu kB\n", mesg->bufferram);
+  tool_printf("SwapTotal:\t\t\t%lu kB\n", mesg->totalswap);
+  tool_printf("SwapFree: \t\t\t%lu kB\n", mesg->freeswap);
+  tool_printf("HighTotal:\t\t\t%lu kB\n", mesg->totalhigh);
+  tool_printf("HighFree: \t\t\t%lu kB\n", mesg->freehigh);
+  tool_printf("MemUnit:  \t\t\t%d B\n",  mesg->mem_unit);
+ }
+}
 int perform_ioctl(int func, void *args)
 {
 	int fd;
@@ -275,19 +292,22 @@ int waitf(void)
 int meminfo(void)
 {
 	char *arg;
-	int async = 0;
+	struct mesg_meminfo mesg;
 
 	arg = strtok(NULL, " ");
-	async = check_for_async(arg);
-	if (async == -1)
+	mesg.async = check_for_async(arg);
+	if (mesg.async == -1)
 		return error_input("meminfo");
 
-	if (async)
-		tool_printf("meminfo async called\n");
-	else
-		tool_printf("meminfo called\n");
-
-	perform_ioctl(IOCTL_MEMINFO, &async);
+	if(perform_ioctl(IOCTL_MEMINFO, &mesg) == 0){
+  if (mesg.async)
+   tool_printf("meminfo async called\n");
+  else
+   display_result_meminfo(&mesg);
+ } else{
+  tool_printf("Error performing ioctl call\n");
+  return -1;
+ }
 
 	return 0;
 }
