@@ -11,7 +11,7 @@
 
 /* meminfo */
 #include <linux/mm.h>
-#include <linux/sysinfo.h>
+//#include <linux/sysinfo.h>
 #include <linux/swap.h>
 
 /* modinfo */
@@ -72,18 +72,28 @@ static void wait_function(struct work_struct *wk)
 
 	pr_info("\n");
  
- kfree( (void*) work->mesg.wait);
- kfree( (void*) work);
 
 }
 
 static void meminfo_function(struct work_struct *wk)
 {
 	struct sysinfo mem_val;
-	//struct sysinfo swap_val;
+ struct func_work * work = container_of(wk, struct func_work, work_s);
 
 	si_meminfo(&mem_val);
-	//si_swapinfo(&swap_val);
+	si_swapinfo(&mem_val);
+ 
+ work->mesg.meminfo->totalram  = mem_val.totalram;
+ work->mesg.meminfo->freeram   = mem_val.freeram;
+ work->mesg.meminfo->sharedram = mem_val.sharedram;
+ work->mesg.meminfo->bufferram = mem_val.bufferram;
+ work->mesg.meminfo->totalswap = mem_val.totalswap;
+ work->mesg.meminfo->freeswap  = mem_val.freeswap;
+ work->mesg.meminfo->totalhigh = mem_val.totalhigh;
+ work->mesg.meminfo->freehigh  = mem_val.freehigh;
+ work->mesg.meminfo->mem_unit  = mem_val.mem_unit;
+
+ work->mesg.meminfo->ret = 0;
 }
 
 static void modinfo_function(struct work_struct *wk)
@@ -164,6 +174,8 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 			
 		if(! queue_work( func_wq,  &(func_work->work_s))){
 			pr_info("work was already on a queue\n");
+   func_work->mesg.kill->ret = -2;
+   copy_to_user((char *) arg, func_work->mesg.kill, sizeof(struct mesg_kill));
    kfree((void*) func_work->mesg.kill);
    kfree((void *) func_work);
 			return -1;
@@ -192,21 +204,31 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
   copy_from_user(func_work->mesg.wait, (char *)arg, sizeof(struct mesg_wait));
 
 		pr_info("recv from user: wait ");
-		for (i = 0; i < func_work->mesg.wait->size; ++i)
+		for (i = 0; i < func_work->mesg.wait->size-1; ++i)
 			pr_info("%d ", func_work->mesg.wait->pids[i]);
 
-		pr_info("%c\n", func_work->mesg.wait->async ? '&' : ' ');
+		pr_info("\n%c\n", func_work->mesg.wait->async ? '&' : ' ');
 
 	 INIT_WORK(&(func_work->work_s), wait_function);
 
 		if (!queue_work(func_wq, &(func_work->work_s))) {
 			pr_info("work was already on a queue\n");
+   func_work->mesg.wait->ret = -2;
+   copy_to_user((char *) arg, func_work->mesg.wait, sizeof(struct mesg_wait));
    kfree((void *) func_work->mesg.wait);
    kfree((void *) func_work);
 			return -1;
 		}
 	
+  pr_info("AVANT FLUSH");
+	 flush_work(&(func_work->work_s));
+		pr_info("AVANT COPYTOUSER");
+		copy_to_user((char *)arg, func_work->mesg.wait, sizeof(struct mesg_wait));
+		pr_info("APRES COPYTOUSER");
  
+  kfree((void *) func_work->mesg.wait);
+  kfree((void *) func_work);
+
 		break;
 
 	case IOCTL_MEMINFO:
@@ -225,10 +247,21 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		if (!queue_work(func_wq, &(func_work->work_s))) {
 			pr_info("work was already on a queue\n");
+   func_work->mesg.meminfo->ret = -2;
+   copy_to_user((char *) arg, func_work->mesg.meminfo, sizeof(struct mesg_meminfo));
    kfree((void *) func_work->mesg.meminfo);
 			kfree((void *) func_work);
    return -1;
 		}
+
+  pr_info("AVANT FLUSH");
+	 flush_work(&(func_work->work_s));
+		pr_info("AVANT COPYTOUSER");
+		copy_to_user((char *)arg, func_work->mesg.meminfo, sizeof(struct mesg_meminfo));
+		pr_info("APRES COPYTOUSER");
+		
+  kfree((void *) func_work->mesg.meminfo);
+  kfree((void *) func_work);
 
 		break;
 
