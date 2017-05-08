@@ -151,6 +151,11 @@ static void modinfo_function(struct work_struct *wk)
 
 	struct func_work * work = container_of(wk, struct func_work, work_s);
 
+	if (mutex_lock_interruptible(&module_mutex) != 0) {
+		work->mesg.modinfo->ret = -EINTR;
+		return;
+	}
+
 	module_tofind = find_module(work->mesg.modinfo->name);
 	if (module_tofind) {
 		pr_info("nom: %s\n", module_tofind->name);
@@ -158,14 +163,15 @@ static void modinfo_function(struct work_struct *wk)
 		pr_info("version: %s\n", module_tofind->version);
 		strcpy(work->mesg.modinfo->res_version, module_tofind->version);
 		pr_info("load adr: %p\n", module_tofind->module_core);
-		pr_info("Avant");
 		work->mesg.modinfo->res_core = module_tofind->module_core;
-		pr_info("Apres");
 		if(module_tofind->args) {
 			pr_info("args: %s\n", module_tofind->args);
 			strcpy(work->mesg.modinfo->res_args, module_tofind->args);
 		}
 	}
+
+	mutex_unlock(&module_mutex);
+
 	pr_info("fin modinfo function");
 }
 

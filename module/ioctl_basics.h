@@ -25,20 +25,21 @@ struct mesg_kill {
 	int async;
 	int signal;
 	int pid;
- int ret;
+	int ret;
 };
 
 struct mesg_wait {
 	int async;
 	int size;
 	int pids[MAX_PIDS];
- int ret;
- int pid;
- int exit_value;
+	int ret;
+	int pid;
+	int exit_value;
 };
 
 struct mesg_modinfo {
 	int async;
+	int ret;
 	char name[BUFF_SIZE];
 	char res_name[BUFF_SIZE];
 	char res_version[BUFF_SIZE];
@@ -47,15 +48,15 @@ struct mesg_modinfo {
 };
 
 struct mesg_meminfo{
- int async;
- int ret;
- unsigned long totalram;      /* Total usable main memory size */
- unsigned long freeram;       /* Available memory size */
- unsigned long sharedram;     /* Amount of shared memory */
- unsigned long bufferram;     /* Memory used by buffers */
- unsigned long totalswap;     /* Total swap space size */
- unsigned long freeswap;      /* Swap space still available */
- unsigned long totalhigh;     /* Total high memory size */
- unsigned long freehigh;      /* Available high memory size */
- int           mem_unit;      /* Memory unit size in bytes */
+	int async;
+	int ret;
+	unsigned long totalram;      /* Total usable main memory size */
+	unsigned long freeram;       /* Available memory size */
+	unsigned long sharedram;     /* Amount of shared memory */
+	unsigned long bufferram;     /* Memory used by buffers */
+	unsigned long totalswap;     /* Total swap space size */
+	unsigned long freeswap;      /* Swap space still available */
+	unsigned long totalhigh;     /* Total high memory size */
+	unsigned long freehigh;      /* Available high memory size */
+	int           mem_unit;      /* Memory unit size in bytes */
 };
