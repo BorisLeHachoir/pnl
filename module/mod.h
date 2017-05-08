@@ -1,5 +1,6 @@
 #include <linux/workqueue.h>
 #include <linux/types.h>
+#include <linux/completion.h>
 
 #include "ioctl_basics.h"
 /*
@@ -9,6 +10,7 @@
 struct func_work {
 	struct work_struct work_s;
 	struct list_head work_list;
+        struct completion cmd_comp;
 	unsigned int id;
 	enum cmd_type cmd_type;
 	union {
@@ -20,3 +22,4 @@ struct func_work {
 		struct mesg_meminfo *meminfo;
 	} mesg;
 };
+
