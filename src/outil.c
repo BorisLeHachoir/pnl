@@ -30,7 +30,7 @@ const struct function_s functions[] = {
 	{"meminfo", NULL, meminfo},
 	{"modinfo", "<name>", modinfo},
 	{"help", NULL, help},
-	{"quit", NULL, quit},
+	{"quit", NULL, quit}
 	{NULL, NULL, error}
 };
 
@@ -116,9 +116,6 @@ static void display_result_fg( struct mesg_fg *mesg)
                 switch (mesg->cmd_type) {
                         case CMDTYPE_LIST:
                                 display_result_list(mesg->mesg.list);
-                                break;
-                        case CMDTYPE_FG:
-                                display_result_fg(mesg->mesg.fg);
                                 break;
                         case CMDTYPE_KILL:
                                 display_result_kill(mesg->mesg.kill);
@@ -244,24 +241,13 @@ int fg(void)
 	char *arg;
 	int id;
 	struct mesg_fg mesg;
-	
-	mesg.async = 0;
 
 	arg = strtok(NULL, " ");
 	if (get_int_from_strtol(&id, arg) == -1)
 		return error_input("fg");
 
-	arg = strtok(NULL, " ");
-	mesg.async = check_for_async(arg);
-	if (mesg.async == -1)
-		return error_input("fg");
-
         if(perform_ioctl(IOCTL_FG, &mesg) == 0){
-                if (mesg.async)
-	                tool_printf("fg async called with arg: %d\n",
-		                mesg.id);
-                else
-                        display_result_fg(&mesg);
+                display_result_fg(&mesg);
 	} else {
                 tool_printf("Error performing ioct call\n");
                 return -1;
