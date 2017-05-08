@@ -25,9 +25,12 @@
 
 static int Major;
 
-static struct workqueue_struct *func_wq;
+static void auto_flushing_second(struct work_struct *wk);
 
-int myvar;
+
+static struct workqueue_struct *func_wq;
+static struct delayed_work *perm_worker_first;
+static struct delayed_work *perm_worker_second;
 
 int open(struct inode *inode, struct file *filp)
 {
@@ -40,6 +43,43 @@ int release(struct inode *inode, struct file *filp)
 	pr_info("Inside close\n");
 	return 0;
 }
+
+static void auto_flushing_first(struct work_struct *wk)
+{
+	pr_info("perm_worker: check for flush\n");
+	ssleep(1);
+	pr_info("perm_worker: stop\n");
+	
+	pr_info("perm_worker: auto-relaunch\n");
+	INIT_DELAYED_WORK(perm_worker_second, auto_flushing_second);
+	pr_info("perm_worker: sched");
+	if (!queue_delayed_work(func_wq, perm_worker_second, 5 * HZ)) {
+		pr_info("failed launching perm_worker\n");
+		return ;
+	}
+	pr_info("perm_worker: auto cancel\n");
+	cancel_delayed_work(perm_worker_first);
+	pr_info("perm_worker: end\n");
+}
+
+static void auto_flushing_second(struct work_struct *wk)
+{
+	pr_info("perm_worker: check for flush\n");
+	ssleep(1);
+	pr_info("perm_worker: stop\n");
+	
+	pr_info("perm_worker: auto-relaunch\n");
+	INIT_DELAYED_WORK(perm_worker_first, auto_flushing_first);
+	pr_info("perm_worker: sched");
+	if (!queue_delayed_work(func_wq, perm_worker_first, 5 * HZ)) {
+		pr_info("failed launching perm_worker\n");
+		return ;
+	}
+	pr_info("perm_worker: auto cancel\n");
+	cancel_delayed_work(perm_worker_second);
+	pr_info("perm_worker: end\n");
+}
+
 
 static void kill_function(struct work_struct *wk)
 {
@@ -353,30 +393,25 @@ long ioctl_funcs(struct file *filp, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 		case IOCTL_LIST:
 			return process_ioctl_list(arg);
-		break;
 
 		case IOCTL_FG:
 			return process_ioctl_fg(func_work, arg);
-		break;
 
 		case IOCTL_KILL:
 			return process_ioctl_kill(func_work, arg);
-		break;
 
 		case IOCTL_WAIT:
 			return process_ioctl_wait(func_work, arg);
-		break;
 
 		case IOCTL_MEMINFO:
 			return process_ioctl_meminfo(func_work, arg);
-		break;
 
 		case IOCTL_MODINFO:
 			return process_ioctl_modinfo(func_work, arg);
-		break;
 
 		default:
 			pr_info("Error ioctl: cmd no found !");		
+			kfree((void *) func_work);
 			return -1;
 	}
 }
@@ -417,6 +452,24 @@ int char_arr_init(void)
 	}
 
 	func_wq = create_workqueue("function_queue");
+	
+	perm_worker_first = kmalloc(sizeof(struct delayed_work), GFP_KERNEL);
+	if (!perm_worker_first) {
+		pr_info("Kmalloc perm_worker failed");
+		return -1;
+	}
+	perm_worker_second = kmalloc(sizeof(struct delayed_work), GFP_KERNEL);
+	if (!perm_worker_second) {
+		pr_info("Kmalloc perm_worker failed");
+		return -1;
+	}
+
+	INIT_DELAYED_WORK(perm_worker_first, auto_flushing_first);
+
+	if (!schedule_delayed_work(perm_worker_first, 5 * HZ)) {
+		pr_info("failed launching perm_worker\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -427,6 +480,11 @@ void char_arr_cleanup(void)
 	cdev_del(kernel_cdev);
 	unregister_chrdev_region(Major, 1);
 
+	cancel_delayed_work(perm_worker_first);
+	cancel_delayed_work(perm_worker_second);
+
+	kfree((void *) perm_worker_first);
+	kfree((void *) perm_worker_second);
 	flush_workqueue(func_wq);
 	destroy_workqueue(func_wq);
 }
