@@ -81,32 +81,33 @@ static void list_function(struct work_struct *wk)
 
 	pr_info("[LIST_FUNCTION]\n");
 	work->mesg.list->size = 0;
-	
 
-	list_for_each_entry(async, &work_list_head.work_list, work_list)
-	{
+	list_for_each_entry(async, &work_list_head.work_list, work_list) {
 		pr_info("ENTRY\n");
-		work->mesg.list->cmd_array[work->mesg.list->size].id = (int)async->id;
-		work->mesg.list->cmd_array[work->mesg.list->size].cmd_type = async->cmd_type;
-			switch (async->cmd_type) {
-			case CMDTYPE_LIST:
-			work->mesg.list->cmd_array[work->mesg.list->size].mesg.list = async->mesg.list;
+		work->mesg.list->cmd_array[work->mesg.list->size].id =
+		    (int)async->id;
+		work->mesg.list->cmd_array[work->mesg.list->size].cmd_type =
+		    async->cmd_type;
+		switch (async->cmd_type) {
+		case CMDTYPE_LIST:
+			work->mesg.list->cmd_array[work->mesg.list->size].mesg.
+			    list = async->mesg.list;
 			break;
 		case CMDTYPE_KILL:
-			work->mesg.list->cmd_array[work->mesg.list->size].mesg.
-			    kill = async->mesg.kill;
+			work->mesg.list->cmd_array[work->mesg.list->size].
+			    mesg.kill = async->mesg.kill;
 			break;
 		case CMDTYPE_WAIT:
-			work->mesg.list->cmd_array[work->mesg.list->size].mesg.
-			    wait = async->mesg.wait;
+			work->mesg.list->cmd_array[work->mesg.list->size].
+			    mesg.wait = async->mesg.wait;
 			break;
 		case CMDTYPE_MEMINFO:
-			work->mesg.list->cmd_array[work->mesg.list->size].mesg.
-			    meminfo = async->mesg.meminfo;
+			work->mesg.list->cmd_array[work->mesg.list->size].
+			    mesg.meminfo = async->mesg.meminfo;
 			break;
 		case CMDTYPE_MODINFO:
-			work->mesg.list->cmd_array[work->mesg.list->size].mesg.
-			    modinfo = async->mesg.modinfo;
+			work->mesg.list->cmd_array[work->mesg.list->size].
+			    mesg.modinfo = async->mesg.modinfo;
 			break;
 		}
 		work->mesg.list->size++;
@@ -263,7 +264,8 @@ static inline int process_ioctl_list(struct func_work *func_work,
 	func_work->cmd_type = CMDTYPE_LIST;
 
 	if (func_work->mesg.list->async)
-		list_add_tail(&(func_work->work_list), &work_list_head.work_list);
+		list_add_tail(&(func_work->work_list),
+			      &work_list_head.work_list);
 
 	INIT_WORK(&(func_work->work_s), list_function);
 
@@ -279,7 +281,6 @@ static inline int process_ioctl_list(struct func_work *func_work,
 		kfree((void *)func_work);
 		return -1;
 	}
-	
 
 	if (!func_work->mesg.list->async) {
 		flush_work(&(func_work->work_s));
@@ -330,7 +331,8 @@ static inline int process_ioctl_kill(struct func_work *func_work,
 	func_work->cmd_type = CMDTYPE_KILL;
 
 	if (func_work->mesg.kill->async)
-		list_add_tail(&(func_work->work_list), &work_list_head.work_list);
+		list_add_tail(&(func_work->work_list),
+			      &work_list_head.work_list);
 
 	INIT_WORK(&(func_work->work_s), kill_function);
 
@@ -350,7 +352,7 @@ static inline int process_ioctl_kill(struct func_work *func_work,
 	if (!func_work->mesg.kill->async) {
 		flush_work(&(func_work->work_s));
 		copy_to_user((char *)arg, func_work->mesg.kill,
-					sizeof(struct mesg_kill));
+			     sizeof(struct mesg_kill));
 		kfree((void *)func_work->mesg.kill);
 		kfree((void *)func_work);
 	}
@@ -385,7 +387,8 @@ static inline int process_ioctl_wait(struct func_work *func_work,
 	pr_info("\n%c\n", func_work->mesg.wait->async ? '&' : ' ');
 
 	if (func_work->mesg.wait->async)
-		list_add_tail(&(func_work->work_list), &work_list_head.work_list);
+		list_add_tail(&(func_work->work_list),
+			      &work_list_head.work_list);
 
 	INIT_WORK(&(func_work->work_s), wait_function);
 
@@ -481,7 +484,8 @@ static inline int process_ioctl_modinfo(struct func_work *func_work,
 	func_work->cmd_type = CMDTYPE_MODINFO;
 
 	if (func_work->mesg.modinfo->async)
-		list_add_tail(&(func_work->work_list), &work_list_head.work_list);
+		list_add_tail(&(func_work->work_list),
+			      &work_list_head.work_list);
 
 	INIT_WORK(&(func_work->work_s), modinfo_function);
 
@@ -498,7 +502,7 @@ static inline int process_ioctl_modinfo(struct func_work *func_work,
 		return -1;
 	}
 
-	if (!func_work->mesg.modinfo->async) {	
+	if (!func_work->mesg.modinfo->async) {
 		flush_work(&(func_work->work_s));
 		copy_to_user((char *)arg, func_work->mesg.modinfo,
 			     sizeof(struct mesg_modinfo));
@@ -625,12 +629,12 @@ void char_arr_cleanup(void)
 		      perm_worker_first);
 	if (perm_worker_second)
 		kfree((void *)perm_worker_second);
-	
+
 	while (&work_list_head.work_list != work_list_head.work_list.next) {
 		func_work_tmp = NULL;
 		func_work_tmp =
-		    container_of(work_list_head.work_list.next, struct func_work,
-				 work_list);
+		    container_of(work_list_head.work_list.next,
+				 struct func_work, work_list);
 		if (func_work_tmp) {
 			switch (func_work_tmp->cmd_type) {
 			case CMDTYPE_LIST:
@@ -647,13 +651,13 @@ void char_arr_cleanup(void)
 				break;
 			case CMDTYPE_MEMINFO:
 				if (func_work_tmp->mesg.meminfo)
-					kfree((void *)func_work_tmp->
-					      mesg.meminfo);
+					kfree((void *)func_work_tmp->mesg.
+					      meminfo);
 				break;
 			case CMDTYPE_MODINFO:
 				if (func_work_tmp->mesg.modinfo)
-					kfree((void *)func_work_tmp->
-					      mesg.modinfo);
+					kfree((void *)func_work_tmp->mesg.
+					      modinfo);
 				break;
 			}
 			kfree((void *)func_work_tmp);

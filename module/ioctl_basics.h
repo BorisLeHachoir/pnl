@@ -1,4 +1,3 @@
-
 struct mesg_kill;
 struct mesg_wait;
 struct mesg_modinfo;
