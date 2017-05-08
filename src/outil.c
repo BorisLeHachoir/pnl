@@ -30,7 +30,7 @@ const struct function_s functions[] = {
 	{"meminfo", NULL, meminfo},
 	{"modinfo", "<name>", modinfo},
 	{"help", NULL, help},
-	{"quit", NULL, quit}
+	{"quit", NULL, quit},
 	{NULL, NULL, error}
 };
 
@@ -93,21 +93,44 @@ static void display_result_wait( struct mesg_wait * mesg)
   tool_printf("Process %d terminated with %d\n", mesg->pid, mesg->exit_value);
 }
 
-static void display_result_list( struct mesg_list *mesg)
+static void display_result_list( struct mesg_list *mesglist)
 {
-        cmd_list * cmd_list_cursor;
-        tool_printf("<------------ List ---------->\n");
-        if(mesg->ret == 0){
-                cmd_list_cursor = mesg->cmd_list;
-                while(cmd_list_cursor){
-                        tool_printf("cmd: %s \t\tid: %d\n", 
-                                cmd_type_str[cmd_list_cursor->cmd_type],
-                                cmd_list_cursor->id);
-                        cmd_list_cursor = cmd_list_cursor->next;
-                }
-        }else{
-                tool_printf("List failed\n");
-        }
+	int i, j;
+
+	if(mesglist->ret || mesglist->size < 0 || mesglist->size > MAX_ASYNC) {
+		tool_printf("The list command failed");
+		return;
+	}
+
+ 	tool_printf("<------------ List ---------->\n");
+	tool_printf("There is currently %d async commands", mesglist->size);
+
+	for(i = 0 ; i < mesglist->size ; ++i) {
+		tool_printf("[ %d ] ", mesglist->cmd_array[i].id);
+		switch (mesglist->cmd_array[i].cmd_type) {
+			case CMDTYPE_LIST:
+				tool_printf("list &\n");
+			break;
+			case CMDTYPE_KILL:
+				tool_printf("kill %d %d &\n", mesglist->cmd_array[i].mesg.kill->signal, mesglist->cmd_array[i].mesg.kill->pid);
+			break;
+			case CMDTYPE_WAIT:
+				tool_printf("wait ");
+				for(j = 0 ; j < mesglist->cmd_array[i].mesg.wait->size ; ++j)
+					tool_printf("%d ", mesglist->cmd_array[i].mesg.wait->pids[j]);
+				tool_printf("&\n");
+			break;
+			case CMDTYPE_MEMINFO:
+				tool_printf("meminfo &\n");
+			break;
+			case CMDTYPE_MODINFO:
+				tool_printf("modinfo %s &\n", mesglist->cmd_array[i].mesg.modinfo->name);
+			break;
+			default:
+				tool_printf("Error, cmd_type not found \n");
+			break;
+		}
+	}
 }
 
 static void display_result_fg( struct mesg_fg *mesg)
@@ -225,11 +248,11 @@ int list(void)
 
         if(perform_ioctl(IOCTL_LIST, &mesg) == 0){
                 if (mesg.async)
-	                tool_printf("list async called\n");
+	                tool_printf("List async successfully called !\n");
                 else
                         display_result_list(&mesg);
 	} else {
-                tool_printf("Error performing ioct call\n");
+                tool_printf("Error performing ioctl call\n");
                 return -1;
         }
 
