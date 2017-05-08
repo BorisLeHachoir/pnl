@@ -269,7 +269,6 @@ static inline int process_ioctl_fg(struct func_work *func_work, unsigned long ar
 	pr_info("recv from user: fg %d \n",
 	func_work->mesg.fg->id);
         func_work->id = id++;
-        func_work->cmd_type = CMDTYPE_FG;
 
 
 	kfree((void *) func_work->mesg.fg);
