@@ -42,22 +42,22 @@ int release(struct inode *inode, struct file *filp)
 }
 
 static void fg_function(struct work_struct *wk)
-{       
-        struct func_work *async;
-        struct func_work *work = container_of(wk, struct func_work, work_s);
+{
+	struct func_work *async;
+	struct func_work *work = container_of(wk, struct func_work, work_s);
 
-        list_for_each_entry(async, &work_list_head.work_list, work_list)
-        {
-                if(work->mesg.fg->id == (int) async->id) break;
-        }
-        
-        if(work->mesg.fg->id == (int) async->id){
+	list_for_each_entry(async, &work_list_head.work_list, work_list) {
+		if (work->mesg.fg->id == (int)async->id)
+			break;
+	}
 
-                wait_for_completion(&(async->cmd_comp));
-                
-                switch (async->cmd_type) {
+	if (work->mesg.fg->id == (int)async->id) {
+
+		wait_for_completion(&(async->cmd_comp));
+
+		switch (async->cmd_type) {
 		case CMDTYPE_LIST:
-		        work->mesg.fg->mesg.list = async->mesg.list;	
+			work->mesg.fg->mesg.list = async->mesg.list;
 			break;
 		case CMDTYPE_KILL:
 			work->mesg.fg->mesg.kill = async->mesg.kill;
@@ -66,20 +66,18 @@ static void fg_function(struct work_struct *wk)
 			work->mesg.fg->mesg.wait = async->mesg.wait;
 			break;
 		case CMDTYPE_MEMINFO:
-		        work->mesg.fg->mesg.modinfo = async->mesg.modinfo;
+			work->mesg.fg->mesg.modinfo = async->mesg.modinfo;
 			break;
 		case CMDTYPE_MODINFO:
-		        work->mesg.fg->mesg.meminfo = async->mesg.meminfo;
+			work->mesg.fg->mesg.meminfo = async->mesg.meminfo;
 			break;
 		}
-                work->mesg.fg->ret = 0;
+		work->mesg.fg->ret = 0;
 
-        }else{
-                work->mesg.fg->ret = -1;
-        }
+	} else {
+		work->mesg.fg->ret = -1;
+	}
 }
- 
-
 
 static void list_function(struct work_struct *wk)
 {
@@ -93,8 +91,33 @@ static void list_function(struct work_struct *wk)
 
 	list_for_each_entry(async, &work_list_head.work_list, work_list) {
 		pr_info("ENTRY\n");
-<<<<<<< HEAD
 		work->mesg.list->cmd_array[work->mesg.list->size].id =
+		    (int)async->id;
+		work->mesg.list->cmd_array[work->mesg.list->size].cmd_type =
+		    async->cmd_type;
+		switch (async->cmd_type) {
+		case CMDTYPE_LIST:
+			work->mesg.list->cmd_array[work->mesg.list->size].
+			    mesg.list = async->mesg.list;
+			break;
+		case CMDTYPE_KILL:
+			work->mesg.list->cmd_array[work->mesg.list->size].mesg.
+			    kill = async->mesg.kill;
+			break;
+		case CMDTYPE_WAIT:
+			work->mesg.list->cmd_array[work->mesg.list->size].mesg.
+			    wait = async->mesg.wait;
+			break;
+		case CMDTYPE_MEMINFO:
+			work->mesg.list->cmd_array[work->mesg.list->size].mesg.
+			    meminfo = async->mesg.meminfo;
+			break;
+		case CMDTYPE_MODINFO:
+			work->mesg.list->cmd_array[work->mesg.list->size].mesg.
+			    modinfo = async->mesg.modinfo;
+			break;
+		}
+		    work->mesg.list->cmd_array[work->mesg.list->size].id =
 		    (int)async->id;
 		work->mesg.list->cmd_array[work->mesg.list->size].cmd_type =
 		    async->cmd_type;
@@ -120,37 +143,11 @@ static void list_function(struct work_struct *wk)
 			    mesg.modinfo = async->mesg.modinfo;
 			break;
 		}
-=======
-		work->mesg.list->cmd_array[work->mesg.list->size].id = (int)async->id;
-		work->mesg.list->cmd_array[work->mesg.list->size].cmd_type = async->cmd_type;
-			switch (async->cmd_type) {
-			case CMDTYPE_LIST:
-			        work->mesg.list->cmd_array[work->mesg.list->size].mesg.list = async->mesg.list;
-			        break;
-		        case CMDTYPE_KILL:
-			        work->mesg.list->cmd_array[work->mesg.list->size].mesg.
-			        kill = async->mesg.kill;
-			        break;
-		        case CMDTYPE_WAIT:
-			        work->mesg.list->cmd_array[work->mesg.list->size].mesg.
-			        wait = async->mesg.wait;
-			        break;
-		        case CMDTYPE_MEMINFO:
-			        work->mesg.list->cmd_array[work->mesg.list->size].mesg.
-			        meminfo = async->mesg.meminfo;
-			        break;
-		        case CMDTYPE_MODINFO:
-			        work->mesg.list->cmd_array[work->mesg.list->size].mesg.
-			        modinfo = async->mesg.modinfo;
-			        break;
-		        }
-
->>>>>>> d61bb73537c02e432e608371481181058700ccac
 		work->mesg.list->size++;
-                pr_info("FINENTRY\n");
+		pr_info("FINENTRY\n");
 	}
-         complete(&(work->cmd_comp));
-         pr_info("FIN\n");
+	complete(&(work->cmd_comp));
+	pr_info("FIN\n");
 }
 
 static void kill_function(struct work_struct *wk)
@@ -162,11 +159,11 @@ static void kill_function(struct work_struct *wk)
 		work->mesg.kill->pid);
 
 	/* Check signal valid */
-	if (work->mesg.kill->signal > _NSIG || work->mesg.kill->signal < 1){
+	if (work->mesg.kill->signal > _NSIG || work->mesg.kill->signal < 1) {
 		work->mesg.kill->ret = -22;
-                complete(&(work->cmd_comp));
-	        return;
-        }
+		complete(&(work->cmd_comp));
+		return;
+	}
 
 	pid_struct = find_get_pid(work->mesg.kill->pid);
 
@@ -175,10 +172,10 @@ static void kill_function(struct work_struct *wk)
 		    kill_pid(pid_struct, work->mesg.kill->signal, 1);
 		pr_info("ret = %d", work->mesg.kill->ret);
 		/*put_pid(pid_struct); */
-	} else{
+	} else {
 		work->mesg.kill->ret = -3;
-        }
-        complete(&(work->cmd_comp));
+	}
+	complete(&(work->cmd_comp));
 }
 
 static void wait_function(struct work_struct *wk)
@@ -233,7 +230,7 @@ static void wait_function(struct work_struct *wk)
 
 	for (i = 0; i < cpt; i++)
 		put_task_struct(task_struct_tab[i]);
-        complete(&(work->cmd_comp));
+	complete(&(work->cmd_comp));
 }
 
 static void meminfo_function(struct work_struct *wk)
@@ -256,7 +253,7 @@ static void meminfo_function(struct work_struct *wk)
 
 	work->mesg.meminfo->ret = 0;
 
-        complete(&(work->cmd_comp));
+	complete(&(work->cmd_comp));
 }
 
 static void modinfo_function(struct work_struct *wk)
@@ -267,7 +264,7 @@ static void modinfo_function(struct work_struct *wk)
 
 	if (mutex_lock_interruptible(&module_mutex) != 0) {
 		work->mesg.modinfo->ret = -EINTR;
-                complete(&(work->cmd_comp));
+		complete(&(work->cmd_comp));
 		return;
 	}
 
@@ -287,7 +284,7 @@ static void modinfo_function(struct work_struct *wk)
 	}
 
 	mutex_unlock(&module_mutex);
-        complete(&(work->cmd_comp));
+	complete(&(work->cmd_comp));
 	pr_info("fin modinfo function");
 }
 
@@ -307,7 +304,7 @@ static inline int process_ioctl_list(struct func_work *func_work,
 		func_work->mesg.list->async ? '&' : ' ');
 	func_work->id = id++;
 	func_work->cmd_type = CMDTYPE_LIST;
-        init_completion(&(func_work->cmd_comp));
+	init_completion(&(func_work->cmd_comp));
 
 	if (func_work->mesg.list->async)
 		list_add_tail(&(func_work->work_list),
@@ -353,21 +350,20 @@ static inline int process_ioctl_fg(struct func_work *func_work,
 	pr_info("recv from user: fg %d\n", func_work->mesg.fg->id);
 	func_work->id = id++;
 
-        INIT_WORK(&(func_work->work_s), fg_function);
+	INIT_WORK(&(func_work->work_s), fg_function);
 
-        if( (!queue_work(func_wq, &(func_work->work_s)))){
-                pr_info("work was already on a queue\n");
-                func_work->mesg.fg->ret = -2;
-                copy_to_user((char*) arg, func_work->mesg.fg, 
-                                        sizeof(struct mesg_fg));
-                kfree((void *) func_work->mesg.fg);
-                kfree((void *) func_work);
-                return -1;
-        }
+	if ((!queue_work(func_wq, &(func_work->work_s)))) {
+		pr_info("work was already on a queue\n");
+		func_work->mesg.fg->ret = -2;
+		copy_to_user((char *)arg, func_work->mesg.fg,
+			     sizeof(struct mesg_fg));
+		kfree((void *)func_work->mesg.fg);
+		kfree((void *)func_work);
+		return -1;
+	}
 
-        flush_work(&(func_work->work_s));
-	copy_to_user((char *)arg, func_work->mesg.fg,
-				sizeof(struct mesg_fg));
+	flush_work(&(func_work->work_s));
+	copy_to_user((char *)arg, func_work->mesg.fg, sizeof(struct mesg_fg));
 	kfree((void *)func_work->mesg.fg);
 	kfree((void *)func_work);
 
@@ -391,7 +387,7 @@ static inline int process_ioctl_kill(struct func_work *func_work,
 		func_work->mesg.kill->async ? '&' : ' ');
 	func_work->id = id++;
 	func_work->cmd_type = CMDTYPE_KILL;
-        init_completion(&(func_work->cmd_comp));
+	init_completion(&(func_work->cmd_comp));
 
 	if (func_work->mesg.kill->async)
 		list_add_tail(&(func_work->work_list),
@@ -442,7 +438,7 @@ static inline int process_ioctl_wait(struct func_work *func_work,
 
 	func_work->id = id++;
 	func_work->cmd_type = CMDTYPE_WAIT;
-        init_completion(&(func_work->cmd_comp));
+	init_completion(&(func_work->cmd_comp));
 
 	pr_info("recv from user: wait ");
 	for (i = 0; i < func_work->mesg.wait->size - 1; ++i)
@@ -496,7 +492,7 @@ static inline int process_ioctl_meminfo(struct func_work *func_work,
 		func_work->mesg.meminfo->async ? '&' : ' ');
 	func_work->id = id++;
 	func_work->cmd_type = CMDTYPE_MEMINFO;
-        init_completion(&(func_work->cmd_comp));
+	init_completion(&(func_work->cmd_comp));
 
 	if (func_work->mesg.meminfo->async) {
 		list_add(&(func_work->work_list), &work_list_head.work_list);
@@ -548,7 +544,7 @@ static inline int process_ioctl_modinfo(struct func_work *func_work,
 		func_work->mesg.modinfo->async ? '&' : ' ');
 	func_work->id = id++;
 	func_work->cmd_type = CMDTYPE_MODINFO;
-        init_completion(&(func_work->cmd_comp));
+	init_completion(&(func_work->cmd_comp));
 
 	if (func_work->mesg.modinfo->async)
 		list_add_tail(&(func_work->work_list),
@@ -671,7 +667,7 @@ void char_arr_cleanup(void)
 	unregister_chrdev_region(Major, 1);
 
 	while (&work_list_head.work_list != work_list_head.work_list.next) {
-                
+
 		func_work_tmp = NULL;
 		func_work_tmp =
 		    container_of(work_list_head.work_list.next,
@@ -692,13 +688,13 @@ void char_arr_cleanup(void)
 				break;
 			case CMDTYPE_MEMINFO:
 				if (func_work_tmp->mesg.meminfo)
-					kfree((void *)func_work_tmp->mesg.
-					      meminfo);
+					kfree((void *)func_work_tmp->
+					      mesg.meminfo);
 				break;
 			case CMDTYPE_MODINFO:
 				if (func_work_tmp->mesg.modinfo)
-					kfree((void *)func_work_tmp->mesg.
-					      modinfo);
+					kfree((void *)func_work_tmp->
+					      mesg.modinfo);
 				break;
 			}
 			kfree((void *)func_work_tmp);
