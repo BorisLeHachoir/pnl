@@ -19,7 +19,7 @@
 const struct function_s {
 	char *name;
 	char *usage;
-	int (*function) ();
+	int (*function)();
 } function_t;
 
 const struct function_s functions[] = {
@@ -39,125 +39,132 @@ static void display_result_modinfo(struct mesg_modinfo *mesg)
 	if (mesg->name) {
 		tool_printf("<---- Module information ---->\n");
 		tool_printf("name: %s\n", mesg->res_name);
-		if(mesg->res_version)
+		if (mesg->res_version)
 			tool_printf("version: %s\n", mesg->res_version);
-		if(mesg->res_core)
+		if (mesg->res_core)
 			tool_printf("base addr: %p\n", mesg->res_core);
-		if(mesg->res_args)
+		if (mesg->res_args)
 			tool_printf("args: %s\n", mesg->res_args);
-	}
-	else {
-		tool_printf("Module %s was not found\n",  mesg->name);
+	} else {
+		tool_printf("Module %s was not found\n", mesg->name);
 	}
 }
 
 static void display_result_kill(struct mesg_kill *mesg)
 {
-  tool_printf("<----------- Kill ----------->\n");
-  if(mesg->ret >= 0)
-   tool_printf("Process was successfully killed\n");
-  else if (mesg->ret == -1)
-   tool_printf("Operation not permitted\n");
-  else if (mesg->ret == -2)
-   tool_printf("kill failed\n");
-  else if (mesg->ret == -3)
-   tool_printf("No such process\n");
-  else if (mesg->ret == -22)
-   tool_printf("Invalid signal\n");
-}
-static void display_result_meminfo( struct mesg_meminfo * mesg)
-{
- tool_printf("<----- Memory information --->\n");
- 
- if(mesg->ret == -2){
-  tool_printf("meminfo failed\n");
- }else{
-  tool_printf("MemTotal: \t\t\t%lu kB\n", mesg->totalram);
-  tool_printf("MemFree:  \t\t\t%lu kB\n", mesg->freeram);
-  tool_printf("MemShare: \t\t\t%lu kB\n", mesg->sharedram);
-  tool_printf("Buffers:  \t\t\t%lu kB\n", mesg->bufferram);
-  tool_printf("SwapTotal:\t\t\t%lu kB\n", mesg->totalswap);
-  tool_printf("SwapFree: \t\t\t%lu kB\n", mesg->freeswap);
-  tool_printf("HighTotal:\t\t\t%lu kB\n", mesg->totalhigh);
-  tool_printf("HighFree: \t\t\t%lu kB\n", mesg->freehigh);
-  tool_printf("MemUnit:  \t\t\t%d B\n",  mesg->mem_unit);
- }
+	tool_printf("<----------- Kill ----------->\n");
+	if (mesg->ret >= 0)
+		tool_printf("Process was successfully killed\n");
+	else if (mesg->ret == -1)
+		tool_printf("Operation not permitted\n");
+	else if (mesg->ret == -2)
+		tool_printf("kill failed\n");
+	else if (mesg->ret == -3)
+		tool_printf("No such process\n");
+	else if (mesg->ret == -22)
+		tool_printf("Invalid signal\n");
 }
 
-static void display_result_wait( struct mesg_wait * mesg)
+static void display_result_meminfo(struct mesg_meminfo *mesg)
 {
- tool_printf("<------------ Wait ---------->\n");
- if(mesg->ret == -2)
-  tool_printf("Wait failed: No such process\n");
- else
-  tool_printf("Process %d terminated with %d\n", mesg->pid, mesg->exit_value);
+	tool_printf("<----- Memory information --->\n");
+
+	if (mesg->ret == -2) {
+		tool_printf("meminfo failed\n");
+	} else {
+		tool_printf("MemTotal: \t\t\t%lu kB\n", mesg->totalram);
+		tool_printf("MemFree:  \t\t\t%lu kB\n", mesg->freeram);
+		tool_printf("MemShare: \t\t\t%lu kB\n", mesg->sharedram);
+		tool_printf("Buffers:  \t\t\t%lu kB\n", mesg->bufferram);
+		tool_printf("SwapTotal:\t\t\t%lu kB\n", mesg->totalswap);
+		tool_printf("SwapFree: \t\t\t%lu kB\n", mesg->freeswap);
+		tool_printf("HighTotal:\t\t\t%lu kB\n", mesg->totalhigh);
+		tool_printf("HighFree: \t\t\t%lu kB\n", mesg->freehigh);
+		tool_printf("MemUnit:  \t\t\t%d B\n", mesg->mem_unit);
+	}
 }
 
-static void display_result_list( struct mesg_list *mesglist)
+static void display_result_wait(struct mesg_wait *mesg)
+{
+	tool_printf("<------------ Wait ---------->\n");
+	if (mesg->ret == -2)
+		tool_printf("Wait failed: No such process\n");
+	else
+		tool_printf("Process %d terminated with %d\n", mesg->pid,
+			    mesg->exit_value);
+}
+
+static void display_result_list(struct mesg_list *mesglist)
 {
 	int i, j;
 
-	if(mesglist->ret || mesglist->size < 0 || mesglist->size > MAX_ASYNC) {
+	if (mesglist->ret || mesglist->size < 0 || mesglist->size > MAX_ASYNC) {
 		tool_printf("The list command failed");
 		return;
 	}
 
- 	tool_printf("<------------ List ---------->\n");
+	tool_printf("<------------ List ---------->\n");
 	tool_printf("There is currently %d async commands\n", mesglist->size);
 
-	for(i = 0 ; i < mesglist->size ; ++i) {
+	for (i = 0; i < mesglist->size; ++i) {
 		tool_printf("[ %d ] ", mesglist->cmd_array[i].id);
 		switch (mesglist->cmd_array[i].cmd_type) {
-			case CMDTYPE_LIST:
-				tool_printf("list &\n");
+		case CMDTYPE_LIST:
+			tool_printf("list &\n");
 			break;
-			case CMDTYPE_KILL:
-				tool_printf("kill %d %d &\n", mesglist->cmd_array[i].mesg.kill->signal, mesglist->cmd_array[i].mesg.kill->pid);
+		case CMDTYPE_KILL:
+			tool_printf("kill %d %d &\n",
+				    mesglist->cmd_array[i].mesg.kill->signal,
+				    mesglist->cmd_array[i].mesg.kill->pid);
 			break;
-			case CMDTYPE_WAIT:
-				tool_printf("wait ");
-				for(j = 0 ; j < mesglist->cmd_array[i].mesg.wait->size ; ++j)
-					tool_printf("%d ", mesglist->cmd_array[i].mesg.wait->pids[j]);
-				tool_printf("&\n");
+		case CMDTYPE_WAIT:
+			tool_printf("wait ");
+			for (j = 0; j < mesglist->cmd_array[i].mesg.wait->size;
+			     ++j)
+				tool_printf("%d ",
+					    mesglist->cmd_array[i].mesg.wait->
+					    pids[j]);
+			tool_printf("&\n");
 			break;
-			case CMDTYPE_MEMINFO:
-				tool_printf("meminfo &\n");
+		case CMDTYPE_MEMINFO:
+			tool_printf("meminfo &\n");
 			break;
-			case CMDTYPE_MODINFO:
-				tool_printf("modinfo %s &\n", mesglist->cmd_array[i].mesg.modinfo->name);
+		case CMDTYPE_MODINFO:
+			tool_printf("modinfo %s &\n",
+				    mesglist->cmd_array[i].mesg.modinfo->name);
 			break;
-			default:
-				tool_printf("Error, cmd_type not found \n");
+		default:
+			tool_printf("Error, cmd_type not found\n");
 			break;
 		}
 	}
 }
 
-static void display_result_fg( struct mesg_fg *mesg)
+static void display_result_fg(struct mesg_fg *mesg)
 {
-        if(mesg->ret == 0){
-                switch (mesg->cmd_type) {
-                        case CMDTYPE_LIST:
-                                display_result_list(mesg->mesg.list);
-                                break;
-                        case CMDTYPE_KILL:
-                                display_result_kill(mesg->mesg.kill);
-                                break;
-                        case CMDTYPE_WAIT:
-                                display_result_wait(mesg->mesg.wait);
-                                break;
-                        case CMDTYPE_MEMINFO:
-                                display_result_meminfo(mesg->mesg.meminfo);
-                                break;
-                        case CMDTYPE_MODINFO:
-                                display_result_modinfo(mesg->mesg.modinfo);
-                                break;
-                        default:
-                                break;
-                }
-        }else{
-                tool_printf("Fg failed\n");
-        }
+	if (mesg->ret == 0) {
+		switch (mesg->cmd_type) {
+		case CMDTYPE_LIST:
+			display_result_list(mesg->mesg.list);
+			break;
+		case CMDTYPE_KILL:
+			display_result_kill(mesg->mesg.kill);
+			break;
+		case CMDTYPE_WAIT:
+			display_result_wait(mesg->mesg.wait);
+			break;
+		case CMDTYPE_MEMINFO:
+			display_result_meminfo(mesg->mesg.meminfo);
+			break;
+		case CMDTYPE_MODINFO:
+			display_result_modinfo(mesg->mesg.modinfo);
+			break;
+		default:
+			break;
+		}
+	} else {
+		tool_printf("Fg failed\n");
+	}
 }
 
 int perform_ioctl(int func, void *args)
@@ -246,15 +253,15 @@ int list(void)
 	if (mesg.async == -1)
 		return error_input("list");
 
-        if(perform_ioctl(IOCTL_LIST, &mesg) == 0){
-                if (mesg.async)
-	                tool_printf("List async successfully called !\n");
-                else
-                        display_result_list(&mesg);
+	if (perform_ioctl(IOCTL_LIST, &mesg) == 0) {
+		if (mesg.async)
+			tool_printf("List async successfully called !\n");
+		else
+			display_result_list(&mesg);
 	} else {
-                tool_printf("Error performing ioctl call\n");
-                return -1;
-        }
+		tool_printf("Error performing ioctl call\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -269,13 +276,12 @@ int fg(void)
 	if (get_int_from_strtol(&id, arg) == -1)
 		return error_input("fg");
 
-        if(perform_ioctl(IOCTL_FG, &mesg) == 0){
-                display_result_fg(&mesg);
+	if (perform_ioctl(IOCTL_FG, &mesg) == 0) {
+		display_result_fg(&mesg);
 	} else {
-                tool_printf("Error performing ioct call\n");
-                return -1;
-        }
-
+		tool_printf("Error performing ioct call\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -307,17 +313,17 @@ int kill(void)
 		tool_printf("kill called with arg: %d, %d\n", mesg.signal,
 			    mesg.pid);
 
-	if(perform_ioctl(IOCTL_KILL, &mesg) == 0){
-                if (mesg.async)
-	                tool_printf("kill async called with arg: %d, %d\n",
-		                mesg.signal, mesg.pid);
-                else
-                        display_result_kill(&mesg);
+	if (perform_ioctl(IOCTL_KILL, &mesg) == 0) {
+		if (mesg.async)
+			tool_printf("kill async called with arg: %d, %d\n",
+				    mesg.signal, mesg.pid);
+		else
+			display_result_kill(&mesg);
 	} else {
-                tool_printf("Error performing ioct call\n");
-                return -1;
-        }
-        return 0;
+		tool_printf("Error performing ioct call\n");
+		return -1;
+	}
+	return 0;
 }
 
 int waitf(void)
@@ -341,7 +347,7 @@ int waitf(void)
 		arg = strtok(NULL, "\n ");
 
 		if (get_int_from_strtol(mesg.pids + i, arg) == -1) {
-			//if (get_int_from_strtol(&buf, arg) == -1) {
+			/*if (get_int_from_strtol(&buf, arg) == -1) {*/
 			mesg.async = check_for_async(arg);
 			if (mesg.async == -1)
 				return error_input("wait");
@@ -352,17 +358,18 @@ int waitf(void)
 
 	mesg.size = i;
 
- if(perform_ioctl(IOCTL_WAIT, &mesg) == 0){
-  if(mesg.async){
-   tool_printf("wait async called with: %d pids\n", mesg.size);
-  }else{
-   tool_printf("wait caliled with: %d pids\n", mesg.size);
-   display_result_wait(&mesg);
-  }
- }else{
-  tool_printf("Error performing ioctl call\n");
-  return -1;
- }
+	if (perform_ioctl(IOCTL_WAIT, &mesg) == 0) {
+		if (mesg.async) {
+			tool_printf("wait async called with: %d pids\n",
+				    mesg.size);
+		} else {
+			tool_printf("wait caliled with: %d pids\n", mesg.size);
+			display_result_wait(&mesg);
+		}
+	} else {
+		tool_printf("Error performing ioctl call\n");
+		return -1;
+	}
 	return 0;
 }
 
@@ -376,15 +383,15 @@ int meminfo(void)
 	if (mesg.async == -1)
 		return error_input("meminfo");
 
-	if(perform_ioctl(IOCTL_MEMINFO, &mesg) == 0){
-  if (mesg.async)
-   tool_printf("meminfo async called\n");
-  else
-   display_result_meminfo(&mesg);
- } else{
-  tool_printf("Error performing ioctl call\n");
-  return -1;
- }
+	if (perform_ioctl(IOCTL_MEMINFO, &mesg) == 0) {
+		if (mesg.async)
+			tool_printf("meminfo async called\n");
+		else
+			display_result_meminfo(&mesg);
+	} else {
+		tool_printf("Error performing ioctl call\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -411,14 +418,12 @@ int modinfo(void)
 	if (mesg.async == -1)
 		return error_input("modinfo");
 
-	if(perform_ioctl(IOCTL_MODINFO, &mesg) == 0)
-	{
+	if (perform_ioctl(IOCTL_MODINFO, &mesg) == 0) {
 		if (mesg.async)
 			tool_printf("modinfo async successfully called !\n");
 		else
 			display_result_modinfo(&mesg);
-	}
-	else {
+	} else {
 		tool_printf("Error performing ioctl call\n");
 		return -1;
 	}
