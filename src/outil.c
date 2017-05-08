@@ -93,6 +93,53 @@ static void display_result_wait( struct mesg_wait * mesg)
   tool_printf("Process %d terminated with %d\n", mesg->pid, mesg->exit_value);
 }
 
+static void display_result_list( struct mesg_list *mesg)
+{
+        cmd_list * cmd_list_cursor;
+        tool_printf("<------------ List ---------->\n");
+        if(mesg->ret == 0){
+                cmd_list_cursor = mesg->cmd_list;
+                while(cmd_list_cursor){
+                        tool_printf("cmd: %s \t\tid: %d\n", 
+                                cmd_type_str[cmd_list_cursor->cmd_type],
+                                cmd_list_cursor->id);
+                        cmd_list_cursor = cmd_list_cursor->next;
+                }
+        }else{
+                tool_printf("List failed\n");
+        }
+}
+
+static void display_result_fg( struct mesg_fg *mesg)
+{
+        if(mesg->ret == 0){
+                switch (mesg->cmd_type) {
+                        case CMDTYPE_LIST:
+                                display_result_list(mesg->mesg.list);
+                                break;
+                        case CMDTYPE_FG:
+                                display_result_fg(mesg->mesg.fg);
+                                break;
+                        case CMDTYPE_KILL:
+                                display_result_kill(mesg->mesg.kill);
+                                break;
+                        case CMDTYPE_WAIT:
+                                display_result_wait(mesg->mesg.wait);
+                                break;
+                        case CMDTYPE_MEMINFO:
+                                display_result_meminfo(mesg->mesg.meminfo);
+                                break;
+                        case CMDTYPE_MODINFO:
+                                display_result_modinfo(mesg->mesg.modinfo);
+                                break;
+                        default:
+                                break;
+                }
+        }else{
+                tool_printf("Fg failed\n");
+        }
+}
+
 int perform_ioctl(int func, void *args)
 {
 	int fd;
@@ -172,19 +219,22 @@ int error(void)
 int list(void)
 {
 	char *arg;
-	int async = 0;
+	struct mesg_list mesg;
 
 	arg = strtok(NULL, " ");
-	async = check_for_async(arg);
-	if (async == -1)
-		return error_input("fg");
+	mesg.async = check_for_async(arg);
+	if (mesg.async == -1)
+		return error_input("list");
 
-	if (async)
-		tool_printf("list async called\n");
-	else
-		tool_printf("list called\n");
-		
-	perform_ioctl(IOCTL_LIST, &async);
+        if(perform_ioctl(IOCTL_LIST, &mesg) == 0){
+                if (mesg.async)
+	                tool_printf("list async called\n");
+                else
+                        display_result_list(&mesg);
+	} else {
+                tool_printf("Error performing ioct call\n");
+                return -1;
+        }
 
 	return 0;
 }
@@ -206,12 +256,17 @@ int fg(void)
 	if (mesg.async == -1)
 		return error_input("fg");
 
-	if (mesg.async)
-		tool_printf("fg async called with arg: %d\n", id);
-	else
-		tool_printf("fg called with arg: %d\n", id);
-		
-	perform_ioctl(IOCTL_FG, &mesg);
+        if(perform_ioctl(IOCTL_FG, &mesg) == 0){
+                if (mesg.async)
+	                tool_printf("fg async called with arg: %d\n",
+		                mesg.id);
+                else
+                        display_result_fg(&mesg);
+	} else {
+                tool_printf("Error performing ioct call\n");
+                return -1;
+        }
+
 
 	return 0;
 }
@@ -243,18 +298,17 @@ int kill(void)
 		tool_printf("kill called with arg: %d, %d\n", mesg.signal,
 			    mesg.pid);
 
-	if(perform_ioctl(IOCTL_KILL, &mesg) == 0)
- {
-   if (mesg.async)
-		  tool_printf("kill async called with arg: %d, %d\n",
-			    mesg.signal, mesg.pid);
-   else
-    display_result_kill(&mesg);
+	if(perform_ioctl(IOCTL_KILL, &mesg) == 0){
+                if (mesg.async)
+	                tool_printf("kill async called with arg: %d, %d\n",
+		                mesg.signal, mesg.pid);
+                else
+                        display_result_kill(&mesg);
 	} else {
-  tool_printf("Error performing ioct call\n");
-  return -1;
- }
- return 0;
+                tool_printf("Error performing ioct call\n");
+                return -1;
+        }
+        return 0;
 }
 
 int waitf(void)
