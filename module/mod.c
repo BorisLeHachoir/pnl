@@ -25,6 +25,9 @@
 
 static int Major;
 
+static int id;
+static struct list * work_list_head;
+
 static void auto_flushing_second(struct work_struct *wk);
 
 
@@ -217,11 +220,57 @@ static void modinfo_function(struct work_struct *wk)
 
 static inline int process_ioctl_list(unsigned long arg)
 {
-	int i;
 	pr_info("ASKED LIST");
-	copy_from_user(&i, (char *)arg, sizeof(int));
-	pr_info("recv from user: list %c\n", i ? '&' : ' ');
-	return 0;
+        func_work->mesg.list = kmalloc(sizeof(struct mesg_list), GFP_KERNEL);
+        if(!func_work->mesg.list){
+                prinfo("kmalloc failed\n");
+                kfree((void*) func_work);
+                return -1;
+        }
+        copy_from_user(func_work->mesg.list, (char *)arg, sizeof(struct mesg_list));
+	pr_info("recv from user: list %c\n", func_work->mesg.list->async ? '&' : ' ');
+        func_work->id = id++;
+        func_work->cmd_type = CMDTYPE_LIST;
+
+        if(func_work->mesg.list->async){
+                func_work->work_list = kmalloc(sizeof(struct list), GFP_KERNEL);
+                if(!func_work->work_list){
+                        pr_info("kmalloc failed\n");
+                        func_work->mesg.list->ret = -2;
+		        copy_to_user((char *) arg, func_work->mesg.list, 
+                                                sizeof(struct mesg_list));
+                        kfree((void *) func_work->mesg.list);
+                        kfree((void *) func_work);
+                        return -1;
+                }else{
+                        list_insert(work_list_head, func_work->work_list);
+                        
+                }
+                
+        }
+        
+        if(! queue_work( func_wq,  &(func_work->work_s))){
+		pr_info("work was already on a queue\n");
+		func_work->mesg.list->ret = -2;
+		copy_to_user((char *) arg, func_work->mesg.list, sizeof(struct mesg_list));
+                if(func_work->work_list){
+                       list_remove(func_work->work_list);
+                       kfree((void*) func_work->work_list);
+                }
+		kfree((void*) func_work->mesg.list);
+		kfree((void *) func_work);
+		return -1;
+	}
+        
+        flush_work(&(func_work->work_s));
+        copy_to_user((char *)arg, func_work->mesg.list, sizeof(struct mesg_list));
+        if(func_work->work_list){
+                list_remove(func_work->work_list);
+                kfree((void*) func_work->work_list);
+        }
+        kfree((void *) func_work->mesg.list);
+        kfree((void *) func_work);
+
 }
 
 static inline int process_ioctl_fg(struct func_work *func_work, unsigned long arg)
@@ -234,10 +283,15 @@ static inline int process_ioctl_fg(struct func_work *func_work, unsigned long ar
 		return -1;
 	}
 	copy_from_user(func_work->mesg.fg, (char *)arg, sizeof(struct mesg_fg));
-	pr_info("recv from user: fg %d %c\n",
-	func_work->mesg.fg->id, func_work->mesg.fg->async ? '&' : ' ');
+	pr_info("recv from user: fg %d \n",
+	func_work->mesg.fg->id);
+        func_work->id = id++;
+        func_work->cmd_type = CMDTYPE_FG;
 
-	// kfree((void*) func_work->mesg.);
+
+	kfree((void *) func_work->mesg.list);
+        kfree((void *) func_work);
+
 	return 0;
 }
 
@@ -253,6 +307,8 @@ static inline int process_ioctl_kill(struct func_work *func_work, unsigned long 
 	copy_from_user(func_work->mesg.kill, (char *)arg, sizeof(struct mesg_kill));
 	pr_info("recv from user: kill %d %d %c\n",
 	func_work->mesg.kill->signal, func_work->mesg.kill->pid, func_work->mesg.kill->async ? '&':' ');
+        func_work->id = id++;
+        func_work->cmd_type = CMDTYPE_KILL;
 
 	INIT_WORK( &(func_work->work_s), kill_function);
 
@@ -294,6 +350,9 @@ static inline int process_ioctl_wait(struct func_work *func_work, unsigned long 
 		pr_info("%d ", func_work->mesg.wait->pids[i]);
 
 	pr_info("\n%c\n", func_work->mesg.wait->async ? '&' : ' ');
+        
+        func_work->id = id++;
+        func_work->cmd_type = CMDTYPE_WAIT;
 
 	INIT_WORK(&(func_work->work_s), wait_function);
 
@@ -328,7 +387,8 @@ static inline int process_ioctl_meminfo(struct func_work *func_work, unsigned lo
 	pr_info("recv from user: meminfo %c\n", func_work->mesg.meminfo->async ? '&' : ' ');
 
 	INIT_WORK(&(func_work->work_s), meminfo_function);
-
+        func_work->id = id++;
+        func_work->cmd_type = CMDTYPE_MEMINFO;
 	if (!queue_work(func_wq, &(func_work->work_s))) {
 		pr_info("work was already on a queue\n");
 		func_work->mesg.meminfo->ret = -2;
@@ -360,6 +420,8 @@ static inline int process_ioctl_modinfo(struct func_work *func_work, unsigned lo
 
 	pr_info("recv from user: modinfo %s %c\n", func_work->mesg.modinfo->name,
 	func_work->mesg.modinfo->async ? '&' : ' ');
+        func_work->id = id++;
+        func_work->cmd_type = CMDTYPE_MODINFO;
 
 	INIT_WORK(&(func_work->work_s), modinfo_function);
 
@@ -429,6 +491,8 @@ int char_arr_init(void)
 	int ret;
 	dev_t dev_no, dev;
 
+        id = 0;
+
 	kernel_cdev = cdev_alloc();
 	kernel_cdev->ops = &fops;
 	kernel_cdev->owner = THIS_MODULE;
@@ -452,6 +516,14 @@ int char_arr_init(void)
 	}
 
 	func_wq = create_workqueue("function_queue");
+
+        work_list_head = kmalloc(sizeof(struct list), GFP_KERNEL);
+        if(work_list_head == NULL){
+                pr_info("kmalloc work_list_head failed\n");
+                return -1;
+        }
+        list_init(work_list_head);
+
 	
 	perm_worker_first = kmalloc(sizeof(struct delayed_work), GFP_KERNEL);
 	if (!perm_worker_first) {
@@ -483,8 +555,17 @@ void char_arr_cleanup(void)
 	cancel_delayed_work(perm_worker_first);
 	cancel_delayed_work(perm_worker_second);
 
-	kfree((void *) perm_worker_first);
-	kfree((void *) perm_worker_second);
+	if(perm_worker_first) kfree((void *) 
+                perm_worker_first);
+	if(perm_worker_second)
+               kfree((void *) perm_worker_second);
+
+        while(work_list_head != NULL){
+                list_remove(work_list_head->prev);
+                kfree((void*) (work_list_head->prev));
+        }
+
+
 	flush_workqueue(func_wq);
 	destroy_workqueue(func_wq);
 }

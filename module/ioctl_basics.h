@@ -26,13 +26,11 @@ enum cmd_type
 };
 
 struct mesg_fg {
-	int async;
 	int id;
         int ret;
         enum cmd_type cmd_type;
         union{
                 struct mesg_list    *  list;
-                struct mesg_fg      *  fg;
                 struct mesg_kill    *  kill;
                 struct mesg_wait    *  wait;
                 struct mesg_modinfo *  modinfo;
