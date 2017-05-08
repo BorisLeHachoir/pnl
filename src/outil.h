@@ -1,5 +1,15 @@
 #pragma once
 
+const char *cmd_type_str[] =
+{
+  "LIST", 
+  "FG",
+  "KILL",
+  "WAIT",
+  "MEMINFO",
+  "MODINFO"
+};
+
 int error_input(char *func_name);
 
 int error(void);
