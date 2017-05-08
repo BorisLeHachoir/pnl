@@ -7,17 +7,16 @@
  */
 
 struct func_work {
-        struct work_struct work_s;
-        struct list_head work_list;
-        unsigned int id;
-        enum cmd_type cmd_type;        
-        union{
-                struct mesg_list    *  list;
-                struct mesg_fg      *  fg;
-                struct mesg_kill    *  kill;
-                struct mesg_wait    *  wait;
-                struct mesg_modinfo *  modinfo;
-                struct mesg_meminfo *  meminfo;
-        }mesg;
+	struct work_struct work_s;
+	struct list_head work_list;
+	unsigned int id;
+	enum cmd_type cmd_type;
+	union {
+		struct mesg_list *list;
+		struct mesg_fg *fg;
+		struct mesg_kill *kill;
+		struct mesg_wait *wait;
+		struct mesg_modinfo *modinfo;
+		struct mesg_meminfo *meminfo;
+	} mesg;
 };
-

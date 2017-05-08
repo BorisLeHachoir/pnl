@@ -17,50 +17,45 @@ struct mesg_list;
 #define MAX_ASYNC 128
 #define MAX_PIDS 16
 
-enum cmd_type
-{
-        CMDTYPE_LIST,
-        CMDTYPE_KILL,
-        CMDTYPE_WAIT,
-        CMDTYPE_MEMINFO,
-        CMDTYPE_MODINFO
+enum cmd_type {
+	CMDTYPE_LIST,
+	CMDTYPE_KILL,
+	CMDTYPE_WAIT,
+	CMDTYPE_MEMINFO,
+	CMDTYPE_MODINFO
 };
 
 struct mesg_fg {
-		int id;
-        int ret;
-        enum cmd_type cmd_type;
-        union{
-                struct mesg_list    *  list;
-                struct mesg_kill    *  kill;
-                struct mesg_wait    *  wait;
-                struct mesg_modinfo *  modinfo;
-                struct mesg_meminfo *  meminfo;
-        }mesg;
+	int id;
+	int ret;
+	enum cmd_type cmd_type;
+	union {
+		struct mesg_list *list;
+		struct mesg_kill *kill;
+		struct mesg_wait *wait;
+		struct mesg_modinfo *modinfo;
+		struct mesg_meminfo *meminfo;
+	} mesg;
 };
 
-
-
-struct cmd_list
-{
+struct cmd_list {
 	int id;
 	enum cmd_type cmd_type;
-	union{
-		struct mesg_list    *  list;
-		struct mesg_kill    *  kill;
-		struct mesg_wait    *  wait;
-		struct mesg_modinfo *  modinfo;
-		struct mesg_meminfo *  meminfo;
-	}mesg;
+	union {
+		struct mesg_list *list;
+		struct mesg_kill *kill;
+		struct mesg_wait *wait;
+		struct mesg_modinfo *modinfo;
+		struct mesg_meminfo *meminfo;
+	} mesg;
 };
 
-struct mesg_list{
-        int async;
-        int ret;
-        int size;
-        struct cmd_list cmd_array[MAX_ASYNC];
+struct mesg_list {
+	int async;
+	int ret;
+	int size;
+	struct cmd_list cmd_array[MAX_ASYNC];
 };
-
 
 struct mesg_kill {
 	int async;
@@ -88,16 +83,16 @@ struct mesg_modinfo {
 	char res_args[BUFF_SIZE];
 };
 
-struct mesg_meminfo{
+struct mesg_meminfo {
 	int async;
 	int ret;
-	unsigned long totalram;      /* Total usable main memory size */
-	unsigned long freeram;       /* Available memory size */
-	unsigned long sharedram;     /* Amount of shared memory */
-	unsigned long bufferram;     /* Memory used by buffers */
-	unsigned long totalswap;     /* Total swap space size */
-	unsigned long freeswap;      /* Swap space still available */
-	unsigned long totalhigh;     /* Total high memory size */
-	unsigned long freehigh;      /* Available high memory size */
-	int           mem_unit;      /* Memory unit size in bytes */
+	unsigned long totalram;	/* Total usable main memory size */
+	unsigned long freeram;	/* Available memory size */
+	unsigned long sharedram;	/* Amount of shared memory */
+	unsigned long bufferram;	/* Memory used by buffers */
+	unsigned long totalswap;	/* Total swap space size */
+	unsigned long freeswap;	/* Swap space still available */
+	unsigned long totalhigh;	/* Total high memory size */
+	unsigned long freehigh;	/* Available high memory size */
+	int mem_unit;		/* Memory unit size in bytes */
 };
