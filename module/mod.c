@@ -52,16 +52,12 @@ static void auto_flushing_first(struct work_struct *wk)
 	ssleep(1);
 	pr_info("perm_worker: stop\n");
 
-	pr_info("perm_worker: auto-relaunch\n");
 	INIT_DELAYED_WORK(perm_worker_second, auto_flushing_second);
-	pr_info("perm_worker: sched");
 	if (!queue_delayed_work(func_wq, perm_worker_second, 5 * HZ)) {
 		pr_info("failed launching perm_worker\n");
 		return;
 	}
-	pr_info("perm_worker: auto cancel\n");
 	cancel_delayed_work(perm_worker_first);
-	pr_info("perm_worker: end\n");
 }
 
 static void auto_flushing_second(struct work_struct *wk)
@@ -70,16 +66,12 @@ static void auto_flushing_second(struct work_struct *wk)
 	ssleep(1);
 	pr_info("perm_worker: stop\n");
 
-	pr_info("perm_worker: auto-relaunch\n");
 	INIT_DELAYED_WORK(perm_worker_first, auto_flushing_first);
-	pr_info("perm_worker: sched");
 	if (!queue_delayed_work(func_wq, perm_worker_first, 5 * HZ)) {
 		pr_info("failed launching perm_worker\n");
 		return;
 	}
-	pr_info("perm_worker: auto cancel\n");
 	cancel_delayed_work(perm_worker_second);
-	pr_info("perm_worker: end\n");
 }
 
 static void list_function(struct work_struct *wk)
@@ -93,6 +85,7 @@ static void list_function(struct work_struct *wk)
 	work->mesg.list->size = 0;
 	list_for_each_entry(async, &work_list_head, work_list)
 	{
+		pr_info("ENTRY");
 		work->mesg.list->cmd_array[work->mesg.list->size].id = (int)async->id;
 		work->mesg.list->cmd_array[work->mesg.list->size].cmd_type = async->cmd_type;
 			switch (async->cmd_type) {
@@ -279,6 +272,7 @@ static inline int process_ioctl_list(struct func_work *func_work,
 		kfree((void *)func_work);
 		return -1;
 	}
+	
 
 	flush_work(&(func_work->work_s));
 	copy_to_user((char *)arg, func_work->mesg.list,
@@ -430,8 +424,10 @@ static inline int process_ioctl_meminfo(struct func_work *func_work,
 	func_work->id = id++;
 	func_work->cmd_type = CMDTYPE_MEMINFO;
 
-	if (func_work->mesg.meminfo->async)
-		list_add_tail(&(func_work->work_list), &work_list_head);
+	if (func_work->mesg.meminfo->async) {
+		list_add(&(func_work->work_list), &work_list_head);
+		pr_info("ASYNC MEMINFO");
+	}
 
 	INIT_WORK(&(func_work->work_s), meminfo_function);
 	if (!queue_work(func_wq, &(func_work->work_s))) {
@@ -447,14 +443,16 @@ static inline int process_ioctl_meminfo(struct func_work *func_work,
 		return -1;
 	}
 
-	flush_work(&(func_work->work_s));
-	copy_to_user((char *)arg, func_work->mesg.meminfo,
-		     sizeof(struct mesg_meminfo));
-	if (func_work->mesg.meminfo->async)
-		list_del(&func_work->work_list);
+	if (!func_work->mesg.meminfo->async) {
+		flush_work(&(func_work->work_s));
+		copy_to_user((char *)arg, func_work->mesg.meminfo,
+			     sizeof(struct mesg_meminfo));
+		if (func_work->mesg.meminfo->async)
+			list_del(&func_work->work_list);
 
-	kfree((void *)func_work->mesg.meminfo);
-	kfree((void *)func_work);
+		kfree((void *)func_work->mesg.meminfo);
+		kfree((void *)func_work);
+	}
 	return 0;
 }
 
