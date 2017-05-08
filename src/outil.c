@@ -110,31 +110,31 @@ static void display_result_list(struct mesg_list *mesglist)
 		tool_printf("[ %d ] ", mesglist->cmd_array[i].id);
 		switch (mesglist->cmd_array[i].cmd_type) {
 		case CMDTYPE_LIST:
-			tool_printf("list &\n");
+			printf("list &\n");
 			break;
 		case CMDTYPE_KILL:
-			tool_printf("kill %d %d &\n",
+			printf("kill %d %d &\n",
 				    mesglist->cmd_array[i].mesg.kill->signal,
 				    mesglist->cmd_array[i].mesg.kill->pid);
 			break;
 		case CMDTYPE_WAIT:
-			tool_printf("wait ");
+			printf("wait ");
 			for (j = 0; j < mesglist->cmd_array[i].mesg.wait->size;
 			     ++j)
-				tool_printf("%d ",
+				printf("%d ",
 					    mesglist->cmd_array[i].mesg.wait->
 					    pids[j]);
-			tool_printf("&\n");
+			printf("&\n");
 			break;
 		case CMDTYPE_MEMINFO:
-			tool_printf("meminfo &\n");
+			printf("meminfo &\n");
 			break;
 		case CMDTYPE_MODINFO:
-			tool_printf("modinfo %s &\n",
+			printf("modinfo %s &\n",
 				    mesglist->cmd_array[i].mesg.modinfo->name);
 			break;
 		default:
-			tool_printf("Error, cmd_type not found\n");
+			printf("Error, cmd_type not found\n");
 			break;
 		}
 	}
