@@ -281,14 +281,16 @@ static inline int process_ioctl_list(struct func_work *func_work,
 	}
 	
 
-	flush_work(&(func_work->work_s));
-	copy_to_user((char *)arg, func_work->mesg.list,
-		     sizeof(struct mesg_list));
-	if (func_work->mesg.list->async)
-		list_del(&func_work->work_list);
+	if (!func_work->mesg.list->async) {
+		flush_work(&(func_work->work_s));
+		copy_to_user((char *)arg, func_work->mesg.list,
+			     sizeof(struct mesg_list));
+		if (func_work->mesg.list->async)
+			list_del(&func_work->work_list);
 
-	kfree((void *)func_work->mesg.list);
-	kfree((void *)func_work);
+		kfree((void *)func_work->mesg.list);
+		kfree((void *)func_work);
+	}
 	return 0;
 }
 
@@ -348,13 +350,15 @@ static inline int process_ioctl_kill(struct func_work *func_work,
 		return -1;
 	}
 
-	flush_work(&(func_work->work_s));
-	copy_to_user((char *)arg, func_work->mesg.kill,
-		     sizeof(struct mesg_kill));
-	if (func_work->mesg.kill->async)
-		list_del(&func_work->work_list);
-	kfree((void *)func_work->mesg.kill);
-	kfree((void *)func_work);
+	if (!func_work->mesg.kill->async) {
+		flush_work(&(func_work->work_s));
+		copy_to_user((char *)arg, func_work->mesg.kill,
+					sizeof(struct mesg_kill));
+		if (func_work->mesg.kill->async)
+			list_del(&func_work->work_list);
+		kfree((void *)func_work->mesg.kill);
+		kfree((void *)func_work);
+	}
 
 	return 0;
 }
@@ -402,13 +406,15 @@ static inline int process_ioctl_wait(struct func_work *func_work,
 		return -1;
 	}
 
-	flush_work(&(func_work->work_s));
-	copy_to_user((char *)arg, func_work->mesg.wait,
-		     sizeof(struct mesg_wait));
-	if (func_work->mesg.wait->async)
-		list_del(&func_work->work_list);
-	kfree((void *)func_work->mesg.wait);
-	kfree((void *)func_work);
+	if (!func_work->mesg.wait->async) {
+		flush_work(&(func_work->work_s));
+		copy_to_user((char *)arg, func_work->mesg.wait,
+			     sizeof(struct mesg_wait));
+		if (func_work->mesg.wait->async)
+			list_del(&func_work->work_list);
+		kfree((void *)func_work->mesg.wait);
+		kfree((void *)func_work);
+	}
 	return 0;
 }
 
@@ -502,14 +508,16 @@ static inline int process_ioctl_modinfo(struct func_work *func_work,
 		return -1;
 	}
 
-	flush_work(&(func_work->work_s));
-	copy_to_user((char *)arg, func_work->mesg.modinfo,
-		     sizeof(struct mesg_modinfo));
-	if (func_work->mesg.modinfo->async)
-		list_del(&func_work->work_list);
+	if (!func_work->mesg.modinfo->async) {	
+		flush_work(&(func_work->work_s));
+		copy_to_user((char *)arg, func_work->mesg.modinfo,
+			     sizeof(struct mesg_modinfo));
+		if (func_work->mesg.modinfo->async)
+			list_del(&func_work->work_list);
 
-	kfree((void *)func_work->mesg.modinfo);
-	kfree((void *)func_work);
+		kfree((void *)func_work->mesg.modinfo);
+		kfree((void *)func_work);
+	}
 
 	return 0;
 }
