@@ -15,11 +15,48 @@ struct mesg_modinfo;
 #define BUFF_SIZE 256
 #define MAX_PIDS 16
 
+enum cmd_type
+{
+        CMDTYPE_LIST,
+        CMDTYPE_FG,
+        CMDTYPE_KILL,
+        CMDTYPE_WAIT,
+        CMDTYPE_MEMINFO,
+        CMDTYPE_MODINFO
+};
 
 struct mesg_fg {
 	int async;
 	int id;
+        int ret;
+        enum cmd_type cmd_type;
+        union{
+                struct mesg_list    *  list;
+                struct mesg_fg      *  fg;
+                struct mesg_kill    *  kill;
+                struct mesg_wait    *  wait;
+                struct mesg_modinfo *  modinfo;
+                struct mesg_meminfo *  meminfo;
+        }mesg;
+
 };
+
+
+
+typedef struct cmd_list cmd_list;
+struct cmd_list
+{
+        int id;
+        enum cmd_type cmd_type;
+        cmd_list * next;       
+};
+
+struct mesg_list{
+        int async;
+        int ret;
+        cmd_list * cmd_list;
+};
+
 
 struct mesg_kill {
 	int async;
