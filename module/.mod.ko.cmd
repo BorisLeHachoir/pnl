@@ -1,1 +1,0 @@
-cmd_/home/robinbm/projet_pnl/module/mod.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/robinbm/projet_pnl/module/mod.ko /home/robinbm/projet_pnl/module/mod.o /home/robinbm/projet_pnl/module/mod.mod.o
