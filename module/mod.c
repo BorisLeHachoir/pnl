@@ -83,6 +83,40 @@ static void auto_flushing_second(struct work_struct *wk)
 	pr_info("perm_worker: end\n");
 }
 
+static void list_function(struct work_struct *wk)
+{
+	struct func_work *async;
+
+	struct func_work * work = container_of(wk, struct func_work, work_s);
+	
+	pr_info("[LIST_FUNCTION]\n");
+
+	work->mesg.list->size = 0;
+	list_for_each_entry(async, &work_list_head, work_list)
+	{
+		work->mesg.list->cmd_array[work->mesg.list->size].id = (int)async->id;
+		work->mesg.list->cmd_array[work->mesg.list->size].cmd_type = async->cmd_type;
+			switch (async->cmd_type) {
+			case CMDTYPE_LIST:
+			work->mesg.list->cmd_array[work->mesg.list->size].mesg.list = async->mesg.list;
+			break;
+			case CMDTYPE_KILL:
+			work->mesg.list->cmd_array[work->mesg.list->size].mesg.kill = async->mesg.kill;
+			break;
+			case CMDTYPE_WAIT:
+			work->mesg.list->cmd_array[work->mesg.list->size].mesg.wait = async->mesg.wait;
+			break;
+			case CMDTYPE_MEMINFO:
+			work->mesg.list->cmd_array[work->mesg.list->size].mesg.meminfo = async->mesg.meminfo;
+			break;
+			case CMDTYPE_MODINFO:
+			work->mesg.list->cmd_array[work->mesg.list->size].mesg.modinfo = async->mesg.modinfo;
+			break;
+		}
+		
+		work->mesg.list->size++;
+	}
+}
 
 static void kill_function(struct work_struct *wk)
 {
@@ -232,7 +266,7 @@ static inline int process_ioctl_list(struct func_work *func_work, unsigned long 
         if(func_work->mesg.list->async)
                 list_add_tail( &(func_work->work_list), &work_list_head);
         
-        INIT_WORK( &(func_work->work_s), kill_function);
+        INIT_WORK( &(func_work->work_s), list_function);
 
         if(! queue_work( func_wq,  &(func_work->work_s))){
 		pr_info("work was already on a queue\n");

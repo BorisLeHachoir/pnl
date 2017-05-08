@@ -103,7 +103,7 @@ static void display_result_list( struct mesg_list *mesglist)
 	}
 
  	tool_printf("<------------ List ---------->\n");
-	tool_printf("There is currently %d async commands", mesglist->size);
+	tool_printf("There is currently %d async commands\n", mesglist->size);
 
 	for(i = 0 ; i < mesglist->size ; ++i) {
 		tool_printf("[ %d ] ", mesglist->cmd_array[i].id);
